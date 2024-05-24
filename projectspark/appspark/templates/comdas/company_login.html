@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+
+    <meta charset="UTF-8">
+    <title>Login/Registration</title>
+    <link rel="stylesheet" href="{% static 'logincss/style1.css' %}">
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="{% static 'bootstrapcss/bootstrap.min.css' %}">
+    <!-- Iconscout CSS -->
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'logincss/style.css' %}">
+    <link href="{% static 'assets2/img/star.png' %}" rel="icon">
+</head>
+<body class="text-dark bg-dark">
+<div class="container">
+    <div class="forms">
+        <div class="form login">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+                <strong>Note: </strong> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            <span class="title">Login as Company</span>
+            <form action="/companylogin/" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="input-field">
+                    <input type="text" placeholder="Enter your username" name="username" required autofocus>
+                    <i class="uil uil-envelope icon"></i>
+                </div>
+                <div class="input-field">
+                    <input type="password" class="password" placeholder="Enter your password" name="password" required>
+                    <i class="uil uil-lock icon"></i>
+                </div>
+                <div class="checkbox-text">
+                    <a href="/companyforget/" class="text">Forgot password?</a>
+                </div>
+                <div class="input-field button">
+                    <input type="submit" value="Login">
+                </div>
+            </form>
+            <div class="login-signup">
+                    <span class="text">Not a User?
+                        <a href="#" class="text signup-link">Register Now</a>
+                    </span>
+            </div>
+        </div>
+        <!-- Registration Form -->
+        <div class="form signup">
+            <span class="title">Registration as Company</span>
+            <form action="/companyregister/" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="input-field">
+                    <input type="text" placeholder="Enter your Company" name="cname" required>
+                    <i class="uil uil-user"></i>
+                </div>
+                <div class="input-field">
+                    <input type="text" placeholder="Enter your username" name="username" required>
+                    <i class="uil uil-user"></i>
+                </div>
+                <div class="input-field">
+                    <input type="text" placeholder="Enter your email" name="email" required>
+                    <i class="uil uil-envelope icon"></i>
+                </div>
+                <div class="input-field">
+                    <input type="password" class="password" placeholder="Create a password" name="password" required>
+                    <i class="uil uil-lock icon"></i>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <label class="form-label mt-3 " for="propic">Upload Company logo:</label>
+                    </div>
+                    <div class="col">
+                        <input type="file" name="propic" id="propic" class="form-control float-left" required>
+                    </div>
+                </div>
+                <div class="input-field button">
+                    <input type="submit" value="Register">
+                </div>
+            </form>
+            <div class="login-signup">
+                    <span class="text">Already a member?
+                        <a href="#" class="text login-link">Login Now</a>
+                    </span>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- partial -->
+<script src="{% static 'logincss/script.js' %}"></script>
+<script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+</body>
+</html>

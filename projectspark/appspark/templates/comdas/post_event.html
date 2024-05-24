@@ -1,0 +1,123 @@
+{% extends 'comdas/company_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+<div class="pagetitle">
+    <h1>Post Event</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+            <li class="breadcrumb-item active">Post Event</li>
+        </ol>
+    </nav>
+    <div><a class="btn btn-primary" href="/manageevent/">MANAGE EVENT</a></div>
+</div>
+
+<div class="col-lg">
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Enter Event Details:</h5>
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+                <strong>Note: </strong> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+
+            <!-- General Form Elements -->
+            <form action="/postevent/" method="post">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Choose Event Category:</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" aria-label="Default select example" name="eventCategory" required>
+                            <option selected>Open this select menu</option>
+                            {% for e in ec %}
+                            <option value="{{e.id}}">{{e.category}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="name" class="col-sm-3 col-form-label">Event Name:</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="name" class="form-control" name="name" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="desc" class="col-sm-3 col-form-label">Describe Your Event:</label>
+                    <div class="col-sm-9">
+                        <textarea class="form-control" id="desc" rows="4" name="desc" required></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="sdate" class="col-sm-3 col-form-label">Start Date:</label>
+                    <div class="col-sm-9">
+                        <input type="date" id="sdate" class="form-control" name="sdate" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="edate" class="col-sm-3 col-form-label">End Date:</label>
+                    <div class="col-sm-9">
+                        <input type="date" id="edate" class="form-control" name="edate" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Choose Workhand Category:</label>
+                    <div class="col-sm-9">
+                        <select class="form-select" aria-label="Default select example" name="workCategory" required>
+                            <option selected>Open this select menu</option>
+                            {% for w in wc %}
+                            <option value="{{w.id}}">{{w.category}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="ttworkhand" class="col-sm-3 col-form-label">Total Workhand needed:</label>
+                    <div class="col-sm-9">
+                        <input type="number" id="ttworkhand" class="form-control" name="totalWorkhandNeeded" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="payment" class="col-sm-3 col-form-label">Payment Range:</label>
+                    <div class="col-sm-9">
+                        <input type="number" id="payment" class="form-control" name="payment" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="address" class="col-sm-3 col-form-label">Street Address:</label>
+                    <div class="col-sm-9">
+                        <textarea class="form-control" id="address" rows="4" name="address" required></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="state" class="col-sm-3 col-form-label">State:</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="state" class="form-control" name="state" required>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label for="city" class="col-sm-3 col-form-label">City:</label>
+                    <div class="col-sm-9">
+                        <input type="text" id="city" class="form-control" name="city" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label class="col-sm-3 col-form-label">Submit Button</label>
+                    <div class="col-sm-9">
+                        <button type="submit" class="btn btn-primary">Submit Form</button>
+                    </div>
+                </div>
+
+            </form><!-- End General Form Elements -->
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

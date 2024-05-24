@@ -1,0 +1,74 @@
+{% extends 'workdas/workhand_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+    <strong>Note: </strong> {{ message }}
+    <a class="btn btn-primary ms-3" href="/approved/">Go to Applications</a>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+
+<div class="pagetitle">
+    <h1>Search Events</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href=/workhanddashboard/"">Home</a></li>
+            <li class="breadcrumb-item active">Search Events</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Search Events -->
+<div class="col-xxl">
+    <div class="card recent-sales overflow-auto">
+        <div class="card-body">
+            <h5 class="card-title">Available Jobs ! <span>| Events</span></h5>
+            <table class="table table-borderless datatable">
+                <thead>
+                <tr>
+                    <th scope="col">Sno</th>
+                    <th scope="col">Company Name</th>
+                    <th scope="col">Event Name</th>
+                    <th scope="col">Event Category</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Budget</th>
+                    <th scope="col">State</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Apply</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for e in events %}
+                <tr>
+                    <td scope="col">{{forloop.counter}}</td>
+                    <td scope="col">{{e.company_id.user.first_name}}</td>
+                    <td scope="col">{{e.event_name}}</td>
+                    <td scope="col">{{e.event_category}}</td>
+                    <td scope="col">{{e.description}}</td>
+                    <td scope="col">{{e.start_date}}</td>
+                    <td scope="col">{{e.payment_range}}</td>
+                    <td scope="col">{{e.state}}</td>
+                    <td scope="col">{{e.city}}</td>
+                    <td scope="col">
+                        <form method="post" action="/applyforevent/{{e.id}}/">
+                            {% csrf_token %}
+                            <input type="hidden" name="workhand" value="{{wu.id}}">
+                            <input type="hidden" name="workhand" value="{{e.id}}">
+                            <input type="hidden" name="workhand" value="{{e.company_id.id}}">
+                            <button type="submit" class="btn btn-success">Apply</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- End Search Events -->
+
+{% endblock %}

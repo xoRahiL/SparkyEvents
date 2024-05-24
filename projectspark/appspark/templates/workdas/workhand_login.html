@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+
+    <meta charset="UTF-8">
+    <title>Login/Registration</title>
+    <link rel="stylesheet" href="{% static '/logincss/style.css' %}">
+
+    <!--    fevicon-->
+    <link href="{% static 'assets2/img/star.png' %}" rel="icon">
+
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="{% static '/bootstrapcss/bootstrap.min.css' %}">
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ===== Iconscout CSS ===== -->
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+
+    <!-- ===== CSS ===== -->
+    <link rel="stylesheet" href="{% static '/logincss/style.css' %}">
+    <title>Register</title>
+
+    <!--<title>Login & Registration Form</title>-->
+</head>
+<body style="background-image: url('/assets/img/hero-bg.jpg')" class="text-dark bg-dark">
+
+
+<div class="container ">
+    <div class="forms">
+        <div class="form login">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+                <strong>Note: </strong> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            <span class="title">Login as WorkHand</span>
+
+            <form action="/workhandlogin/" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="input-field">
+                    <input type="text" placeholder="Enter your username" name="username" required autofocus>
+                    <i class="uil uil-envelope icon"></i>
+                </div>
+                <div class="input-field">
+                    <input type="password" class="password" placeholder="Enter your password" name="password" required>
+                    <i class="uil uil-lock icon"></i>
+<!--                    <i class="uil uil-eye-slash showHidePw"></i>-->
+                </div>
+
+                <div class="checkbox-text">
+                    <a href="/workhandforget/" class="text">Forgot password?</a>
+                </div>
+
+                <div class="input-field button">
+                    <input type="submit" value="Login">
+                </div>
+            </form>
+
+            <div class="login-signup">
+                    <span class="text">Not a User?
+                        <a href="#" class="text signup-link">Register Now</a>
+                    </span>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <div class="form signup overflow-auto">
+            <span class="title">Registration as WorkHand</span>
+
+            <form action="/workhandregister/" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col">
+                        <div class="input-field">
+                            <input type="text" placeholder="Enter your first name" name="fname" required>
+                            <i class="uil uil-user"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-field">
+                            <input type="text" placeholder="Enter your last name" name="lname" required>
+                            <i class="uil uil-user float-right"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="input-field">
+                            <input type="text" placeholder="Enter your username" name="username" required>
+                            <i class="uil uil-user"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-field">
+                            <input type="text" placeholder="Enter your email" name="email" required>
+                            <i class="uil uil-envelope icon"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-field">
+                    <input type="password" class="password" placeholder="Create a password" name="password" required>
+                    <i class="uil uil-lock icon"></i>
+                </div>
+                <div class="row mt-3">
+                    <div class="col">
+                        <label class="form-label mt-3 " for="propic">Upload your profile picture:</label>
+                    </div>
+                    <div class="col">
+                        <input type="file" name="propic" id="propic" class="form-control float-left" required>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <label class="col-md-6 col-lg-5 col-form-label">Choose Workhand Category:</label>
+                    <div class="col-md-6 col-lg-7">
+                        <select class="form-select" aria-label="Default select example" name="category" required>
+                            <option selected>Open this select menu</option>
+                            {% for c in cat %}
+                            <option name="category" value="{{c.id}}">{{c.category}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-field button">
+                    <input type="submit" value="Register">
+                </div>
+            </form>
+
+            <div class="login-signup">
+                    <span class="text">Already a member?
+                        <a href="#" class="text login-link">Login Now</a>
+                    </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</body>
+<!-- partial -->
+<script src="{% static '/logincss/script.js' %}"></script>
+<script src="{% static '/bootstrap/js/bootstrap.min.js' %}"></script>
+
+</body>
+</html>
+

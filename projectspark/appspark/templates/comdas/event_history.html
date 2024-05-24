@@ -1,0 +1,71 @@
+{% extends 'comdas/company_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+<div class="pagetitle">
+    <h1>Event History</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+            <li class="breadcrumb-item active">Event History</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="col-lg">
+
+
+    <!-- Events Posted -->
+    <div class="col-12">
+        <div class="card recent-sales overflow-auto">
+            <div class="card-body">
+                <h5 class="card-title">Manage <span>| Events</span></h5>
+                <table class="table table-borderless datatable">
+                    <thead>
+                    <tr>
+                        <th scope="col">Sno</th>
+                        <th scope="col">Event Name</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Payment</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">State</th>
+                        <th scope="col">City</th>
+                        <th scope="col">Workhand Needed</th>
+                        <th scope="col">Workhand Name</th>
+                        <th scope="col">Feedback</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for eh in eh %}
+                    <tr>
+                        <td scope="col">{{forloop.counter}}</td>
+                        <td scope="col">{{eh.event_name}}</td>
+                        <td scope="col">{{eh.description}}</td>
+                        <td scope="col">{{eh.start_date}}</td>
+                        <td scope="col">{{eh.end_date}}</td>
+                        <td scope="col">{{eh.payment_range}}</td>
+                        <td scope="col">{{eh.address}}</td>
+                        <td scope="col">{{eh.state}}</td>
+                        <td scope="col">{{eh.city}}</td>
+                        <td scope="col">{{eh.workhand_needed}}</td>
+                        <td scope="col">{{eh.workhand_id.user.first_name}}</td>
+                        <td scope="col ">
+                            <a href="/companyfeedback/{{eh.id}}/" class="btn btn-primary">
+                                <i class="bi bi-chat-right-text-fill text-dark text-light"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- End Events Posted -->
+
+</div>
+
+{% endblock %}

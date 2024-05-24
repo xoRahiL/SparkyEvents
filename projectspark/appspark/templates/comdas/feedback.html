@@ -1,0 +1,53 @@
+{% extends 'comdas/company_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+<div class="pagetitle">
+    <h1>Feedback</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/companyeventhistory/">History</a></li>
+            <li class="breadcrumb-item active">Feedback</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<div class="col-lg">
+
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Give Feedback:</h5>
+
+            <!-- Feedback Form  -->
+            <form action="/companyfeedback/{{id}}/" method="post">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <label for="title" class="col-2 col-form-label">Feedback Title</label>
+                    <div class="col-10">
+                        <input name="title" type="text" class="form-control" id="title"
+                               value="">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <label for="feedback" class="col-2 col-form-label">Feedback:</label>
+                    <div class="col-10">
+                        <textarea class="form-control" id="feedback" rows="4" name="feedback"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <label class="col-2 col-form-label">Submit Button</label>
+                    <div class="col-10">
+                        <button type="submit" class="btn btn-primary">Submit Form</button>
+                    </div>
+                </div>
+
+            </form><!-- End Feedback Form -->
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

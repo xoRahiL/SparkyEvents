@@ -1,0 +1,76 @@
+{% extends 'comdas/company_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+<div class="pagetitle">
+    <h1>Manage Event</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+            <li class="breadcrumb-item active">Manage Event</li>
+        </ol>
+    </nav>
+    <div><a class="btn btn-success" href="/postevent/">POST NEW EVENT</a></div>
+</div>
+
+<div class="col-lg">
+
+
+    <!-- Events Posted -->
+    <div class="col-12">
+        <div class="card recent-sales overflow-auto">
+            <div class="card-body">
+                <h5 class="card-title">Manage <span>| Events</span></h5>
+                <table class="table table-borderless datatable">
+                    <thead>
+                    <tr>
+                        <th scope="col">Sno</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Event Category</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Start Date</th>
+                        <th scope="col">End Date</th>
+                        <th scope="col">Payment</th>
+                        <th scope="col">Address</th>
+                        <th scope="col">City</th>
+                        <th scope="col">State</th>
+                        <th scope="col">Workhand</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for e in events %}
+                    <tr>
+                        <td scope="col">{{forloop.counter}}</td>
+                        <td scope="col">{{e.event_name}}</td>
+                        <td scope="col">{{e.event_category}}</td>
+                        <td scope="col">{{e.description}}</td>
+                        <td scope="col">{{e.start_date}}</td>
+                        <td scope="col">{{e.end_date}}</td>
+                        <td scope="col">{{e.payment_range}}</td>
+                        <td scope="col">{{e.address}}</td>
+                        <td scope="col">{{e.city}}</td>
+                        <td scope="col">{{e.state}}</td>
+                        <td scope="col">{{e.workhand_needed}}</td>
+                        <td scope="col">
+                            <a href="/updateevent/{{e.id}}/" class="btn btn-danger mb-2">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="/deleteevent/{{e.id}}/" class="btn btn-primary mb-2">
+                                <i class="bi bi-trash3"></i>
+                            </a>
+
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- End Events Posted -->
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'workdas/workhand_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+<!-- End Approved Events -->
+
+<div class="pagetitle">
+    <h1>Approved Events</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
+            <li class="breadcrumb-item active">Approved Events</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="col-xxl">
+    <div class="card recent-sales overflow-auto">
+        <div class="card-body">
+            <h5 class="card-title">Approved <span>| Events</span></h5>
+            <table class="table table-borderless datatable">
+                <thead>
+                <tr>
+                    <th scope="col">Sno</th>
+                    <th scope="col">Company Name</th>
+                    <th scope="col">Event Name</th>
+                    <th scope="col">Event Category</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Contact</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
+                    <th scope="col">Address</th>
+                    <th scope="col">State</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Budget</th>
+                    <th scope="col">Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for app in app %}
+                {% if app.status == True %}
+                <tr>
+                    <td scope="col">{{forloop.counter}}</td>
+                    <td scope="col">{{app.to_company.user.first_name}}</td>
+                    <td scope="col">{{app.event.event_name}}</td>
+                    <td scope="col">{{app.event.event_category}}</td>
+                    <td scope="col">{{app.event.description}}</td>
+                    <td scope="col">{{app.to_company.user.email}}</td>
+                    <td scope="col">{{app.to_company.contact}}</td>
+                    <td scope="col">{{app.event.start_date}}</td>
+                    <td scope="col">{{app.event.end_date}}</td>
+                    <td scope="col">{{app.event.address}}</td>
+                    <td scope="col">{{app.event.state}}</td>
+                    <td scope="col">{{app.event.city}}</td>
+                    <td scope="col">{{app.event.payment_range}}</td>
+                    <td scope="col">
+                        <a href="/eventcompleted/{{app.id}}/" class="btn btn-primary mb-2">
+                            <i class="bi bi-check2-circle"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- End Approved Events -->
+
+{% endblock %}

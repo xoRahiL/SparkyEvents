@@ -1,0 +1,58 @@
+{% extends 'workdas/workhand_dashboard.html' %}
+{% load static %}
+
+{%  block content %}
+
+<div class="pagetitle">
+    <h1>Profile</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
+            <li class="breadcrumb-item"><a href="/workhandeventhistory/">History</a></li>
+            <li class="breadcrumb-item active">Feedback Details</li>
+        </ol>
+    </nav>
+</div>
+<!-- End Page Title -->
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+    <strong>Note: </strong> {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+<section class="section profile">
+
+    <div class="row">
+        <div class="col-xl">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <div class="tab-content pt-2">
+
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Date</div>
+                                <div class="col-lg-9 col-md-8 text-capitalize">{{fb.date}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Company</div>
+                                <div class="col-lg-9 col-md-8 text-capitalize">{{fb.company_id.user.first_name}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Event</div>
+                                <div class="col-lg-9 col-md-8 text-capitalize">{{fb.event_id.event_name}}</div>
+                            </div>
+                            <hr>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label h3">Feedback Title</div>
+                                <div class="col-lg-9 col-md-8 text-capitalize h4">{{fb.feedback_title}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label h5">Feedback Description</div>
+                                <div class="col-lg-9 col-md-8 text-capitalize h4">{{fb.feedback}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</section>
+{% endblock %}

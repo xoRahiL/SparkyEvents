@@ -1,0 +1,77 @@
+{% extends 'workdas/workhand_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- End History -->
+
+<div class="pagetitle">
+    <h1>History</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
+            <li class="breadcrumb-item active"><a href="/workhandeventhistory/">History</a></li>
+        </ol>
+    </nav>
+</div>
+
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
+    <strong>Note: </strong> {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+
+<div class="col-xxl">
+    <div class="card recent-sales overflow-auto">
+        <div class="card-body">
+            <h5 class="card-title">Event <span>| History</span></h5>
+            <table class="table table-borderless datatable">
+                <thead>
+                <tr>
+                    <th scope="col">Sno</th>
+                    <th scope="col">Company name</th>
+                    <th scope="col">Event name</th>
+                    <th scope="col">Event Category</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Start Date</th>
+                    <th scope="col">End Date</th>
+                    <th scope="col">Budget</th>
+                    <th scope="col">Feedback</th>
+                    <th scope="col">State</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Workhand Needed</th>
+                    <th scope="col">Workhand Name</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for eh in eh %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ eh.company_id.user.first_name }}</td>
+                    <td>{{ eh.event_name }}</td>
+                    <td>{{ eh.event_category }}</td>
+                    <td>{{ eh.description }}</td>
+                    <td>{{ eh.start_date }}</td>
+                    <td>{{ eh.end_date }}</td>
+                    <td>{{ eh.payment_range }}</td>
+                    <td>{{ eh.address }}</td>
+                    <td>{{ eh.state }}</td>
+                    <td>{{ eh.city }}</td>
+                    <td>{{ eh.workhand_needed }}</td>
+                    <td>{{ eh.workhand_id.user.first_name }}</td>
+                    <td>
+                        <a href="/workhandfeedback/{{ eh.id }}/" class="btn btn-primary">
+                            <i class="bi bi-chat-right-text-fill text-dark text-light"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<!-- End History -->
+
+{% endblock %}
