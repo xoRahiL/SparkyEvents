@@ -19,5 +19,5 @@
 ## Tech Stack
 - **Frontend**: HTML, CSS (Bootstrap), JavaScript
 - **Backend**: Python, Django
-- **Database**: Django ORM, SQLite (or specify if another database is used)
+- **Database**: Django ORM, SQLite and MySQL
 - **Other Tools**: Git for version control
