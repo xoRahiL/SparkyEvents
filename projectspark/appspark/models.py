@@ -68,6 +68,14 @@ class WorkhandApplications(models.Model):
     event = models.ForeignKey(Event, on_delete=models.SET_NULL, null=True)
     status = models.BooleanField(default=False)
 
+    class Meta:
+        # DB-level guarantee: even two simultaneous requests can't create
+        # duplicate applications for the same workhand+event. The previous
+        # code only checked with .exists() first, which has a race window.
+        constraints = [
+            models.UniqueConstraint(fields=['workhand', 'event'], name='unique_application_per_event')
+        ]
+
     # def __str__(self):
     #     s = self.status
     #     if s is True:

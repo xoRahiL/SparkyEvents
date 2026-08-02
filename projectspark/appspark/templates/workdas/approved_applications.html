@@ -1,73 +1,79 @@
 {% extends 'workdas/workhand_dashboard.html' %}
 {% load static %}
 
-{%  block content %}
-
-<!-- End Approved Events -->
+{% block content %}
 
 <div class="pagetitle">
-    <h1>Approved Events</h1>
+    <h1>Approved Applications</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
-            <li class="breadcrumb-item active">Approved Events</li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
+            <li class="breadcrumb-item active">Approved Applications</li>
         </ol>
     </nav>
 </div>
+
+{% include 'partials/messages.html' %}
 
 <div class="col-xxl">
     <div class="card recent-sales overflow-auto">
         <div class="card-body">
             <h5 class="card-title">Approved <span>| Events</span></h5>
+
+            {% if app %}
             <table class="table table-borderless datatable">
                 <thead>
                 <tr>
-                    <th scope="col">Sno</th>
-                    <th scope="col">Company Name</th>
-                    <th scope="col">Event Name</th>
-                    <th scope="col">Event Category</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Contact</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
-                    <th scope="col">Address</th>
-                    <th scope="col">State</th>
-                    <th scope="col">City</th>
+                    <th scope="col">Company</th>
+                    <th scope="col">Event</th>
+                    <th scope="col" class="d-none d-lg-table-cell">Contact</th>
+                    <th scope="col">Dates</th>
+                    <th scope="col" class="d-none d-md-table-cell">Location</th>
                     <th scope="col">Budget</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">Action</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for app in app %}
-                {% if app.status == True %}
+                {% for application in app %}
+                {% if application.status %}
                 <tr>
-                    <td scope="col">{{forloop.counter}}</td>
-                    <td scope="col">{{app.to_company.user.first_name}}</td>
-                    <td scope="col">{{app.event.event_name}}</td>
-                    <td scope="col">{{app.event.event_category}}</td>
-                    <td scope="col">{{app.event.description}}</td>
-                    <td scope="col">{{app.to_company.user.email}}</td>
-                    <td scope="col">{{app.to_company.contact}}</td>
-                    <td scope="col">{{app.event.start_date}}</td>
-                    <td scope="col">{{app.event.end_date}}</td>
-                    <td scope="col">{{app.event.address}}</td>
-                    <td scope="col">{{app.event.state}}</td>
-                    <td scope="col">{{app.event.city}}</td>
-                    <td scope="col">{{app.event.payment_range}}</td>
-                    <td scope="col">
-                        <a href="/eventcompleted/{{app.id}}/" class="btn btn-primary mb-2">
-                            <i class="bi bi-check2-circle"></i>
-                        </a>
+                    <td>
+                        {{ application.to_company.user.first_name }}
+                        <div class="text-muted small">{{ application.to_company.user.email }}</div>
+                    </td>
+                    <td>
+                        <strong>{{ application.event.event_name }}</strong>
+                        <div class="text-muted small">{{ application.event.event_category }}</div>
+                    </td>
+                    <td class="d-none d-lg-table-cell">{{ application.to_company.contact }}</td>
+                    <td class="small">{{ application.event.start_date }} &rarr; {{ application.event.end_date }}</td>
+                    <td class="d-none d-md-table-cell">{{ application.event.city }}, {{ application.event.state }}</td>
+                    <td>{{ application.event.payment_range }}</td>
+                    <td>
+                        <form method="post" action="{% url 'eventcompleted' application.id %}"
+                              onsubmit="return confirm('Mark this event as completed? This will move it to your history and cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm" title="Mark Completed">
+                                <i class="bi bi-check2-circle"></i> Mark Completed
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% endif %}
                 {% endfor %}
                 </tbody>
             </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-hourglass-split" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                <p class="text-muted mt-3 mb-3">No approved applications yet.</p>
+                <a href="{% url 'searchevents' %}" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Find Events to Apply
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-<!-- End Approved Events -->
 
 {% endblock %}

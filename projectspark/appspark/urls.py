@@ -13,6 +13,7 @@ urlpatterns = [
     # WORKHAND DASHBOARD SIDE
     path('workhanddashboard/', views.workhand_dashboard, name='workhanddashboard'),
     path('workhandprofile/', views.workhand_profile, name='workhandprofile'),
+    path('workhandchangepassword/', views.workhand_change_password, name='workhandchangepassword'),
     path('searchevents/', views.search_events, name='searchevents'),
     path('applyforevent/<int:id>/', views.apply_for_event, name='applyforevent'),
     path('approved/', views.approved, name='approved'),
@@ -28,6 +29,7 @@ urlpatterns = [
     path('companydashboard/', views.company_dashboard, name='companydashboard'),
     path('postevent/', views.post_event, name='postevent'),
     path('companyprofile/', views.company_profile, name='companyprofile'),
+    path('companychangepassword/', views.company_change_password, name='companychangepassword'),
     path('manageevent/', views.manage_event, name='manageevent'),
     path('updateevent/<int:id>/', views.update_event, name='updateevent'),
     path('deleteevent/<int:id>/', views.delete_event, name='deleteevent'),

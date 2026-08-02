@@ -14,8 +14,6 @@
     <link href="{% static 'assets2/img/star.png' %}" rel="icon">
 
 
-    <!--    <link href="{% static 'assets2/img/favicon.png' %}" rel="icon">-->
-    <!--    <link href="{% static 'assets2/img/apple-touch-icon.png' %}" rel="apple-touch-icon">-->
 
     <!-- Google Fonts -->
     <link href="https://fonts.gstatic.com" rel="preconnect">
@@ -24,16 +22,26 @@
             rel="stylesheet">
 
     <!-- Vendor CSS Files -->
-    <link href="{% static 'assets2/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'bootstrapcss/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'assets2/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/quill/quill.snow.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/quill/quill.bubble.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/remixicon/remixicon.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/simple-datatables/style.css' %}" rel="stylesheet">
 
     <!-- Template Main CSS File -->
     <link href="{% static 'assets2/css/newstyle.css' %}" rel="stylesheet">
+
+    <!-- Brand theme override: re-colors the generic template blue to match
+         the actual SparkyEvents brand color used on the landing/login pages. -->
+    <link href="{% static 'assets2/css/brand-theme.css' %}" rel="stylesheet">
+
+    <!-- Sticky footer fix: keeps the footer pinned to the bottom of the
+         viewport on pages with little content, instead of floating right
+         after the content ends. Safe here because the header/sidebar use
+         fixed/absolute positioning and don't participate in this flow. -->
+    <style>
+        html, body { height: 100%; }
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        #main { flex: 1 0 auto; }
+        #footer { flex-shrink: 0; }
+    </style>
 
     <!-- =======================================================
     * Template Name: NiceAdmin
@@ -65,9 +73,9 @@
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
 
                     <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle"
-                         onerror="this.src='{% static 'assets2/img/anonymouspic.png' %}'">
+                         onerror="this.src='{% static 'assets2/img/AnonymousPic.png' %}'">
 
-                    <span class="d-none d-md-block dropdown-toggle ps-2" style="text-transform:capitalize">{{user.first_name}}</span>
+                    <span class="d-none d-md-block dropdown-toggle ps-2" style="text-transform:capitalize">{{ user.username }}</span>
                 </a>
                 <!-- End Profile Iamge Icon -->
 
@@ -80,7 +88,7 @@
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="/companyprofile/">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'companyprofile' %}">
                             <i class="bi bi-person"></i>
                             <span>My Profile</span>
                         </a>
@@ -89,7 +97,7 @@
                         <hr class="dropdown-divider">
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="/companylogout/">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'companylogout' %}">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Log Out</span>
                         </a>
@@ -115,7 +123,7 @@
         <li class="nav-heading">Your Details</li>
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/companyprofile/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'companyprofile' %}collapsed{% endif %}" href="{% url 'companyprofile' %}">
                 <i class="bi bi-person"></i>
                 <span>Profile</span>
             </a>
@@ -124,31 +132,31 @@
         <li class="nav-heading">Work</li>
 
         <li class="nav-item">
-            <a class="nav-link " href="/companydashboard/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'companydashboard' %}collapsed{% endif %}" href="{% url 'companydashboard' %}">
                 <i class="bi bi-grid"></i>
                 <span>Dashboard</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/postevent/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'postevent' %}collapsed{% endif %}" href="{% url 'postevent' %}">
                 <i class="bi bi-journal-text"></i>
                 <span>Post Event</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/manageevent/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'manageevent' %}collapsed{% endif %}" href="{% url 'manageevent' %}">
                 <i class="bi bi-dash-circle"></i>
                 <span>Manage Events</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/approveapplications/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'approveapplications' %}collapsed{% endif %}" href="{% url 'approveapplications' %}">
                 <i class="bi bi-file-earmark"></i>
                 <span>Manage Applications</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/companyeventhistory/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'companyeventhistory' %}collapsed{% endif %}" href="{% url 'companyeventhistory' %}">
                 <i class="bi bi-card-list"></i>
                 <span>History</span>
             </a>
@@ -158,18 +166,13 @@
 </aside><!-- End Sidebar-->
 <main id="main" class="main">
     {% block content %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-        <strong>Note: </strong> {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
+    {% include 'partials/messages.html' %}
 
     <div class="pagetitle">
         <h1>Dashboard</h1>
         <nav>
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'companydashboard' %}">Home</a></li>
                 <li class="breadcrumb-item active">Dashboard</li>
             </ol>
         </nav>
@@ -184,7 +187,7 @@
                     <div class="col-xxl-4 col-md-6">
                         <div class="card info-card sales-card">
                             <div class="card-body">
-                                <h5 class="card-title">Total Events <span>Posted </span></h5>
+                                <h5 class="card-title">Total Events <span>Posted</span></h5>
                                 <div class="d-flex align-items-center">
                                     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
                                         <i class="bi bi-journal-text"></i>
@@ -205,12 +208,10 @@
                                 <h5 class="card-title">Total Events <span>Completed</span></h5>
                                 <div class="d-flex align-items-center">
                                     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-<!--                                        <i class="bi bi-currency-dollar"></i>-->
-<!--                                        <i class="bi bi-currency-rupee"></i>-->
                                         <i class="bi bi-check2"></i>
                                     </div>
                                     <div class="ps-3">
-                                        <h6>{{ e|length }}</h6>
+                                        <h1>{{ eh|length }}</h1>
                                     </div>
                                 </div>
                             </div>
@@ -223,38 +224,44 @@
                         <div class="card recent-sales overflow-auto">
                             <div class="card-body">
                                 <h5 class="card-title">Events Posted <span>| Recent</span></h5>
+
+                                {% if events %}
                                 <table class="table table-borderless datatable">
                                     <thead>
                                     <tr>
-                                        <th scope="col">S.No.</th>
                                         <th scope="col">Event Name</th>
-                                        <th scope="col">Event Category</th>
-                                        <th scope="col">Description</th>
-                                        <th scope="col">Start Date</th>
-                                        <th scope="col">End Date</th>
-                                        <th scope="col">Payment Range</th>
-                                        <th scope="col">State</th>
-                                        <th scope="col">City</th>
-                                        <th scope="col">Workhand Needed</th>
+                                        <th scope="col" class="d-none d-lg-table-cell">Category</th>
+                                        <th scope="col">Dates</th>
+                                        <th scope="col" class="d-none d-md-table-cell">Location</th>
+                                        <th scope="col">Payment</th>
+                                        <th scope="col">Slots</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {% for e in e %}
+                                    {% for event in events %}
                                     <tr>
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>{{ e.event_name }}</td>
-                                        <td>{{ e.event_category }}</td>
-                                        <td>{{ e.description }}</td>
-                                        <td>{{ e.start_date }}</td>
-                                        <td>{{ e.end_date }}</td>
-                                        <td>{{ e.payment_range }}</td>
-                                        <td>{{ e.state }}</td>
-                                        <td>{{ e.city }}</td>
-                                        <td>{{ e.workhand_needed }}</td>
+                                        <td>
+                                            <strong>{{ event.event_name }}</strong>
+                                            <div class="text-muted small d-lg-none">{{ event.event_category }}</div>
+                                        </td>
+                                        <td class="d-none d-lg-table-cell">{{ event.event_category }}</td>
+                                        <td class="small">{{ event.start_date }} &rarr; {{ event.end_date }}</td>
+                                        <td class="d-none d-md-table-cell">{{ event.city }}, {{ event.state }}</td>
+                                        <td>{{ event.payment_range }}</td>
+                                        <td><span class="badge bg-primary rounded-pill">{{ event.workhand_needed }}</span></td>
                                     </tr>
                                     {% endfor %}
                                     </tbody>
                                 </table>
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-journal-plus" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                                    <p class="text-muted mt-3 mb-3">You haven't posted any events yet.</p>
+                                    <a href="{% url 'postevent' %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle"></i> Post Your First Event
+                                    </a>
+                                </div>
+                                {% endif %}
 
                             </div>
                         </div>
@@ -285,10 +292,7 @@
         class="bi bi-arrow-up-short"></i></a>
 
 <!-- Vendor JS Files -->
-<script src="{% static 'assets2/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'assets2/vendor/quill/quill.min.js' %}"></script>
-<script src="{% static 'assets2/vendor/simple-datatables/simple-datatables.js' %}"></script>
-<script src="{% static 'assets2/vendor/tinymce/tinymce.min.js' %}"></script>
+<script src="{% static 'bootstrapjs/bootstrap.bundle.min.js' %}"></script>
 
 <!-- Template Main JS File -->
 <script src="{% static 'assets2/js/main.js' %}"></script>

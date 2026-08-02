@@ -1,21 +1,48 @@
 {% extends 'workdas/workhand_dashboard.html' %}
 {% load static %}
 
-{%  block content %}
+{% block content %}
 
-{% for message in messages %}
-<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-    <strong>Note: </strong> {{ message }}
-    <a class="btn btn-primary ms-3" href="/approved/">Go to Applications</a>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+{% if messages %}
+<div class="toast-stack" style="position: fixed; top: 20px; right: 20px; z-index: 9999; width: 360px;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} shadow-sm fade-toast" role="alert"
+         style="animation: toastSlideIn 0.3s ease-out; border-radius: 10px; border: none;">
+        <div class="d-flex align-items-start gap-2">
+            {% if message.tags == 'success' %}
+            <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+            {% else %}
+            <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+            {% endif %}
+            <span class="flex-grow-1">{{ message }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <a class="btn btn-primary btn-sm mt-2" href="{% url 'approved' %}">Go to Applications</a>
+    </div>
+    {% endfor %}
 </div>
-{% endfor %}
+<style>
+    @keyframes toastSlideIn {
+        from { transform: translateX(20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toast-stack .alert').forEach(function (el) {
+        setTimeout(function () {
+            bootstrap.Alert.getOrCreateInstance(el).close();
+        }, 6000);
+    });
+});
+</script>
+{% endif %}
 
 <div class="pagetitle">
     <h1>Search Events</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href=/workhanddashboard/"">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
             <li class="breadcrumb-item active">Search Events</li>
         </ol>
     </nav>
@@ -25,47 +52,55 @@
 <div class="col-xxl">
     <div class="card recent-sales overflow-auto">
         <div class="card-body">
-            <h5 class="card-title">Available Jobs ! <span>| Events</span></h5>
+            <h5 class="card-title">Available Jobs <span>| Events</span></h5>
+
+            {% if events %}
             <table class="table table-borderless datatable">
                 <thead>
                 <tr>
-                    <th scope="col">Sno</th>
-                    <th scope="col">Company Name</th>
+                    <th scope="col">Company</th>
                     <th scope="col">Event Name</th>
-                    <th scope="col">Event Category</th>
-                    <th scope="col">Description</th>
+                    <th scope="col" class="d-none d-lg-table-cell">Category</th>
                     <th scope="col">Date</th>
+                    <th scope="col" class="d-none d-md-table-cell">Location</th>
                     <th scope="col">Budget</th>
-                    <th scope="col">State</th>
-                    <th scope="col">City</th>
                     <th scope="col">Apply</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for e in events %}
+                {% for event in events %}
                 <tr>
-                    <td scope="col">{{forloop.counter}}</td>
-                    <td scope="col">{{e.company_id.user.first_name}}</td>
-                    <td scope="col">{{e.event_name}}</td>
-                    <td scope="col">{{e.event_category}}</td>
-                    <td scope="col">{{e.description}}</td>
-                    <td scope="col">{{e.start_date}}</td>
-                    <td scope="col">{{e.payment_range}}</td>
-                    <td scope="col">{{e.state}}</td>
-                    <td scope="col">{{e.city}}</td>
-                    <td scope="col">
-                        <form method="post" action="/applyforevent/{{e.id}}/">
+                    <td>{{ event.company_id.user.first_name }}</td>
+                    <td>
+                        <strong>{{ event.event_name }}</strong>
+                        <div class="text-muted small">{{ event.description|truncatewords:12 }}</div>
+                    </td>
+                    <td class="d-none d-lg-table-cell">{{ event.event_category }}</td>
+                    <td class="small">{{ event.start_date }}</td>
+                    <td class="d-none d-md-table-cell">{{ event.city }}, {{ event.state }}</td>
+                    <td>{{ event.payment_range }}</td>
+                    <td>
+                        {% if event.id in applied_event_ids %}
+                        <button type="button" class="btn btn-secondary btn-sm" disabled>
+                            <i class="bi bi-check2"></i> Applied
+                        </button>
+                        {% else %}
+                        <form method="post" action="{% url 'applyforevent' event.id %}">
                             {% csrf_token %}
-                            <input type="hidden" name="workhand" value="{{wu.id}}">
-                            <input type="hidden" name="workhand" value="{{e.id}}">
-                            <input type="hidden" name="workhand" value="{{e.company_id.id}}">
-                            <button type="submit" class="btn btn-success">Apply</button>
+                            <button type="submit" class="btn btn-success btn-sm">Apply</button>
                         </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-search" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                <p class="text-muted mt-3 mb-0">No events available right now. Check back soon!</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

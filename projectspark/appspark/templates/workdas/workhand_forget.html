@@ -2,81 +2,52 @@
 <html lang="en">
 <head>
     {% load static %}
-
-    <meta charset="UTF-8">
-    <title>Login/Registration</title>
-    <link rel="stylesheet" href="{% static '/logincss/style.css' %}">
-
-    <!-- bootstrap -->
-    <link rel="stylesheet" href="{% static '/css/bootstrap.min.css' %}">
-</head>
-<body>
-<!-- partial:index.partial.html -->
-<html lang="en">
-<head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password</title>
 
-    <!-- ===== Icon scout CSS ===== -->
     <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
-
-    <!-- ===== CSS ===== -->
-    <link rel="stylesheet" href="{% static '/logincss/style.css' %}">
-
-    <link rel="stylesheet" href="{% static '/bootstrapcss/bootstrap.min.css' %}">
-    <title>Register</title>
-
-    <!--<title>Login & Registration Form</title>-->
+    <link rel="stylesheet" href="{% static 'bootstrapcss/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'logincss/style.css' %}">
 </head>
-<body style="background-image: url('/assets/img/hero-bg.jpg')" class="text-dark bg-dark">
+<body style="background-image: url('{% static 'assets/img/hero-bg.jpg' %}')" class="text-dark bg-dark">
 
-{% for message in messages %}
-<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-    <strong>Note: </strong> {{ message }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endfor %}
+{% include 'partials/messages.html' %}
 
 <div class="container w-50">
-    <div class="forms ">
+    <div class="forms">
         <div class="form login">
             <span class="title">Forgot Password</span>
 
-            <form action="/workhandforget/" method="post">
+            <form action="{% url 'workhandforget' %}" method="post">
                 {% csrf_token %}
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your email" name="email" required>
+                    <input type="email" placeholder="Enter your email" name="email" required>
                     <i class="uil uil-envelope icon"></i>
                 </div>
                 <div class="input-field">
-                    <input type="text" placeholder="Enter college name you graduated from !" name="security" required>
+                    <input type="text" placeholder="Enter college name you graduated from!" name="security" required>
                     <i class="uil uil-envelope icon"></i>
                 </div>
                 <div class="input-field">
-                    <input type="password" class="password" placeholder="Enter your password" name="password" required>
+                    <input type="password" class="password" placeholder="Enter your new password" name="password" required>
                     <i class="uil uil-lock icon"></i>
-                    <i class="uil uil-eye-slash showHidePw"></i>
                 </div>
                 <div class="input-field button">
-                    <input type="submit" value="Login">
+                    <input type="submit" value="Reset Password">
                 </div>
             </form>
 
             <div class="login-signup">
                     <span class="text">Already a User?
-                        <a href="/workhandlogin/" class="text">Login</a>
+                        <a href="{% url 'workhandlogin' %}" class="text">Login</a>
                     </span>
             </div>
         </div>
-
     </div>
 </div>
 
-
+<script src="{% static 'logincss/script.js' %}"></script>
 </body>
-<!-- partial -->
-<script src="{% static '/logincss/script.js' %}"></script>
-
 </html>
-

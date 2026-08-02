@@ -1,0 +1,133 @@
+/*
+  Brand theme override.
+  The dashboard theme (NiceAdmin) ships with its own default blue (#4154f1),
+  unrelated to SparkyEvents' actual brand color (#f82249), already used
+  consistently on the landing and login/register pages. This file re-points
+  dashboard accents to match, so all three areas feel like one product.
+  Load this AFTER bootstrap.min.css and newstyle.css so it wins the cascade.
+*/
+
+:root {
+    --brand-primary: #f82249;
+    --brand-primary-dark: #e0072f;
+    --bs-primary: #f82249;
+    --bs-primary-rgb: 248, 34, 73;
+}
+
+/* --- Sidebar & tab accents (these do NOT sit on a pink background,
+       so brand-colored text stays readable here) --- */
+.nav-tabs-bordered .nav-link:hover,
+.nav-tabs-bordered .nav-link:focus,
+.nav-tabs-bordered .nav-link.active,
+.sidebar-nav .nav-link i,
+.sidebar-nav .nav-link:hover,
+.sidebar-nav .nav-link:hover i,
+.sidebar-nav .nav-content a.active,
+.dashboard .filter .icon:focus,
+.dashboard .sales-card .card-icon,
+.dashboard .news h4 a:hover {
+    color: var(--brand-primary) !important;
+}
+
+.nav-tabs-bordered .nav-link.active {
+    border-bottom: 2px solid var(--brand-primary);
+}
+
+.sidebar-nav .nav-content a.active i {
+    background-color: var(--brand-primary);
+}
+
+/* --- Top header bar: background goes brand pink, but every link/icon
+       inside it must stay white, since it sits directly on that pink
+       background (this is what broke last time - a blanket "a { color }"
+       rule made header icons pink-on-pink and invisible) --- */
+#header {
+    background: var(--brand-primary);
+}
+
+#header a,
+#header i,
+#header .nav-link,
+#header .nav-profile span,
+#header .search-form input {
+    color: #fff !important;
+}
+
+/* The dropdown menu popup has a white background, so it must NOT inherit
+   the forced-white header text color above, or its text becomes invisible
+   (this is exactly the bug that broke "My Profile" / "Logout" last time). */
+#header .dropdown-menu,
+#header .dropdown-menu a,
+#header .dropdown-menu i,
+#header .dropdown-menu span,
+#header .dropdown-menu h6 {
+    color: #212529 !important;
+}
+
+#header .dropdown-menu .dropdown-header span {
+    color: var(--brand-primary) !important;
+}
+
+/* Center the logo in the header bar */
+#header .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#header .search-form input::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Buttons: force explicit white text so it never blends into the
+       brand-colored background, regardless of Bootstrap's own defaults --- */
+.btn-primary {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--brand-primary-dark) !important;
+    border-color: var(--brand-primary-dark) !important;
+    color: #fff !important;
+}
+
+.btn-outline-primary {
+    color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+/* --- Utility classes used directly in templates (badges, backgrounds) --- */
+.bg-primary {
+    background-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+/* Plain text-primary (used for links/icons NOT sitting on a pink
+   background - e.g. card icons, plain body text accents) */
+.text-primary {
+    color: var(--brand-primary) !important;
+}
+
+/* --- Contact form (landing-page-style component reused in dashboard) --- */
+.contact .php-email-form textarea:focus {
+    border-color: var(--brand-primary);
+}
+
+.contact .php-email-form button[type=submit] {
+    background: var(--brand-primary);
+    color: #fff !important;
+}
+
+.contact .php-email-form button[type=submit]:hover {
+    background: var(--brand-primary-dark);
+}

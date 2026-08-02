@@ -1,75 +1,82 @@
 {% extends 'comdas/company_dashboard.html' %}
 {% load static %}
 
-{%  block content %}
+{% block content %}
 
 <div class="pagetitle">
-    <h1>Manage Event</h1>
+    <h1>Manage Events</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
-            <li class="breadcrumb-item active">Manage Event</li>
+            <li class="breadcrumb-item"><a href="{% url 'companydashboard' %}">Home</a></li>
+            <li class="breadcrumb-item active">Manage Events</li>
         </ol>
     </nav>
-    <div><a class="btn btn-success" href="/postevent/">POST NEW EVENT</a></div>
 </div>
+
+{% include 'partials/messages.html' %}
 
 <div class="col-lg">
 
-
-    <!-- Events Posted -->
+    <!-- Manage Events -->
     <div class="col-12">
         <div class="card recent-sales overflow-auto">
             <div class="card-body">
                 <h5 class="card-title">Manage <span>| Events</span></h5>
+
+                {% if events %}
                 <table class="table table-borderless datatable">
                     <thead>
                     <tr>
-                        <th scope="col">Sno</th>
-                        <th scope="col">Name</th>
-                        <th scope="col">Event Category</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
+                        <th scope="col">Event Name</th>
+                        <th scope="col" class="d-none d-lg-table-cell">Category</th>
+                        <th scope="col">Dates</th>
+                        <th scope="col" class="d-none d-md-table-cell">Location</th>
                         <th scope="col">Payment</th>
-                        <th scope="col">Address</th>
-                        <th scope="col">City</th>
-                        <th scope="col">State</th>
-                        <th scope="col">Workhand</th>
+                        <th scope="col">Slots</th>
                         <th scope="col">Action</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {% for e in events %}
+                    {% for event in events %}
                     <tr>
-                        <td scope="col">{{forloop.counter}}</td>
-                        <td scope="col">{{e.event_name}}</td>
-                        <td scope="col">{{e.event_category}}</td>
-                        <td scope="col">{{e.description}}</td>
-                        <td scope="col">{{e.start_date}}</td>
-                        <td scope="col">{{e.end_date}}</td>
-                        <td scope="col">{{e.payment_range}}</td>
-                        <td scope="col">{{e.address}}</td>
-                        <td scope="col">{{e.city}}</td>
-                        <td scope="col">{{e.state}}</td>
-                        <td scope="col">{{e.workhand_needed}}</td>
-                        <td scope="col">
-                            <a href="/updateevent/{{e.id}}/" class="btn btn-danger mb-2">
+                        <td>
+                            <strong>{{ event.event_name }}</strong>
+                            <div class="text-muted small d-lg-none">{{ event.event_category }}</div>
+                        </td>
+                        <td class="d-none d-lg-table-cell">{{ event.event_category }}</td>
+                        <td class="small">{{ event.start_date }} &rarr; {{ event.end_date }}</td>
+                        <td class="d-none d-md-table-cell">{{ event.city }}, {{ event.state }}</td>
+                        <td>{{ event.payment_range }}</td>
+                        <td><span class="badge bg-primary rounded-pill">{{ event.workhand_needed }}</span></td>
+                        <td class="text-nowrap">
+                            <a href="{% url 'updateevent' event.id %}" class="btn btn-outline-secondary btn-sm mb-1" title="Edit">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
-                            <a href="/deleteevent/{{e.id}}/" class="btn btn-primary mb-2">
-                                <i class="bi bi-trash3"></i>
-                            </a>
-
+                            <form method="post" action="{% url 'deleteevent' event.id %}" class="d-inline"
+                                  onsubmit="return confirm('Delete \'{{ event.event_name }}\'? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm mb-1" title="Delete">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}
                     </tbody>
                 </table>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-journal-plus" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                    <p class="text-muted mt-3 mb-3">No events to manage yet.</p>
+                    <a href="{% url 'postevent' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Post Your First Event
+                    </a>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
-    <!-- End Events Posted -->
+    <!-- End Manage Events -->
 
 </div>
 

@@ -3,75 +3,65 @@
 
 {% block content %}
 
-<!-- End History -->
-
 <div class="pagetitle">
     <h1>History</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
-            <li class="breadcrumb-item active"><a href="/workhandeventhistory/">History</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
+            <li class="breadcrumb-item active">History</li>
         </ol>
     </nav>
 </div>
 
-{% for message in messages %}
-<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-    <strong>Note: </strong> {{ message }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endfor %}
+{% include 'partials/messages.html' %}
 
 <div class="col-xxl">
     <div class="card recent-sales overflow-auto">
         <div class="card-body">
             <h5 class="card-title">Event <span>| History</span></h5>
+
+            {% if eh %}
             <table class="table table-borderless datatable">
                 <thead>
                 <tr>
-                    <th scope="col">Sno</th>
-                    <th scope="col">Company name</th>
-                    <th scope="col">Event name</th>
-                    <th scope="col">Event Category</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
+                    <th scope="col">Company</th>
+                    <th scope="col">Event</th>
+                    <th scope="col" class="d-none d-lg-table-cell">Category</th>
+                    <th scope="col">Dates</th>
+                    <th scope="col" class="d-none d-md-table-cell">Location</th>
                     <th scope="col">Budget</th>
                     <th scope="col">Feedback</th>
-                    <th scope="col">State</th>
-                    <th scope="col">City</th>
-                    <th scope="col">Workhand Needed</th>
-                    <th scope="col">Workhand Name</th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for eh in eh %}
+                {% for record in eh %}
                 <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ eh.company_id.user.first_name }}</td>
-                    <td>{{ eh.event_name }}</td>
-                    <td>{{ eh.event_category }}</td>
-                    <td>{{ eh.description }}</td>
-                    <td>{{ eh.start_date }}</td>
-                    <td>{{ eh.end_date }}</td>
-                    <td>{{ eh.payment_range }}</td>
-                    <td>{{ eh.address }}</td>
-                    <td>{{ eh.state }}</td>
-                    <td>{{ eh.city }}</td>
-                    <td>{{ eh.workhand_needed }}</td>
-                    <td>{{ eh.workhand_id.user.first_name }}</td>
+                    <td>{{ record.company_id.user.first_name }}</td>
                     <td>
-                        <a href="/workhandfeedback/{{ eh.id }}/" class="btn btn-primary">
-                            <i class="bi bi-chat-right-text-fill text-dark text-light"></i>
+                        <strong>{{ record.event_name }}</strong>
+                        <div class="text-muted small d-lg-none">{{ record.event_category }}</div>
+                    </td>
+                    <td class="d-none d-lg-table-cell">{{ record.event_category }}</td>
+                    <td class="small">{{ record.start_date }} &rarr; {{ record.end_date }}</td>
+                    <td class="d-none d-md-table-cell">{{ record.city }}, {{ record.state }}</td>
+                    <td>{{ record.payment_range }}</td>
+                    <td>
+                        <a href="{% url 'workhandfeedback' record.id %}" class="btn btn-primary btn-sm" title="View Feedback">
+                            <i class="bi bi-chat-right-text-fill"></i>
                         </a>
                     </td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                <p class="text-muted mt-3 mb-0">No completed events yet.</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-<!-- End History -->
 
 {% endblock %}
