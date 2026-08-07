@@ -33,10 +33,14 @@ class WorkhandRegisterForm(BaseRegisterForm):
     fname = forms.CharField(max_length=50)
     lname = forms.CharField(max_length=50)
     category = forms.ModelChoiceField(queryset=WorkhandCategory.objects.all())
+    state = forms.CharField(max_length=50, required=False)
+    city = forms.CharField(max_length=50, required=False)
 
 
 class CompanyRegisterForm(BaseRegisterForm):
     cname = forms.CharField(max_length=50)
+    state = forms.CharField(max_length=50, required=False)
+    city = forms.CharField(max_length=50, required=False)
 
 
 class LoginForm(forms.Form):

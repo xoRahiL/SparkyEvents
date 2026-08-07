@@ -1,5 +1,7 @@
 import logging
 import datetime
+import random
+import threading
 from functools import wraps
 
 from django.conf import settings
@@ -8,9 +10,13 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
+from django.core.files.storage import default_storage
+from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
+from django.db.models import Sum, Count, Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
@@ -24,6 +30,33 @@ from .models import (
 from .tasks import send_notification_email_task
 
 logger = logging.getLogger(__name__)
+
+# Maps known event category names to a Bootstrap Icon class, used to give
+# each event card a distinct visual identity instead of a plain text badge.
+CATEGORY_ICONS = {
+    "Wedding": "bi-heart-fill",
+    "Birthday Party": "bi-cake2-fill",
+    "Corporate Event": "bi-briefcase-fill",
+    "Concert": "bi-music-note-beamed",
+    "Conference": "bi-mic-fill",
+    "Exhibition": "bi-easel-fill",
+    "Product Launch": "bi-rocket-takeoff-fill",
+    "Anniversary": "bi-gift-fill",
+    "Baby Shower": "bi-balloon-heart-fill",
+    "Graduation Party": "bi-mortarboard-fill",
+    "Religious Ceremony": "bi-book-fill",
+    "Sports Event": "bi-trophy-fill",
+    "Festival": "bi-stars",
+}
+
+
+def attach_category_icons(events):
+    """Attaches a `.category_icon` attribute to each event for template use.
+    Falls back to a generic calendar icon for any category not in the map."""
+    for event in events:
+        category_name = str(event.event_category) if event.event_category_id else None
+        event.category_icon = CATEGORY_ICONS.get(category_name, "bi-calendar-event-fill")
+    return events
 
 
 def company_required(view_func):
@@ -62,7 +95,18 @@ def workhand_required(view_func):
 # process, so the user's request never waits on it.
 # ---------------------------------------------------------------------------
 def send_notification_email(subject, template_message, to_email):
-    send_notification_email_task.delay(subject, template_message, to_email)
+    if settings.USE_CELERY:
+        send_notification_email_task.delay(subject, template_message, to_email)
+    else:
+        # No Celery worker available (e.g. free hosting tier). Sending
+        # synchronously here would block the request for several seconds
+        # (real SMTP handshake with Gmail) - a plain background thread gets
+        # the same non-blocking behavior without needing Celery or Redis.
+        threading.Thread(
+            target=send_notification_email_task,
+            args=(subject, template_message, to_email),
+            daemon=True,
+        ).start()
 
 
 def welcome_message(name, role_line):
@@ -104,6 +148,26 @@ def application_approved_message(workhand_name, event_name, company_name):
     )
 
 
+def otp_message(name, otp):
+    return (
+        f"Hi {name},\n\n"
+        f"Your SparkyEvents verification code is:\n\n"
+        f"{otp}\n\n"
+        f"This code expires in {OTP_EXPIRY_MINUTES} minutes. If you didn't request "
+        f"this, you can safely ignore this email.\n\n"
+        f"Warm regards,\n"
+        f"The SparkyEvents Team"
+    )
+
+
+OTP_EXPIRY_MINUTES = 15
+OTP_RESEND_COOLDOWN_SECONDS = 60
+
+
+def generate_otp():
+    return str(random.randint(100000, 999999))
+
+
 def index(request):
     return render(request, 'index.html')
 
@@ -118,29 +182,95 @@ def workhand_register(request):
     if request.method == 'POST':
         if register_form.is_valid():
             data = register_form.cleaned_data
-            myuser = User.objects.create_user(
-                username=data['username'], email=data['email'], password=data['password'],
-                first_name=data['fname'], last_name=data['lname'],
-            )
-            Workhand.objects.create(
-                user=myuser,
-                workhand_category=data['category'],
-                profile_pic=data.get('propic') or Workhand._meta.get_field('profile_pic').default,
-            )
+            propic_path = None
+            if data.get('propic'):
+                propic_path = default_storage.save(
+                    f"pending_uploads/{data['username']}_{data['propic'].name}", data['propic']
+                )
 
+            otp = generate_otp()
+            now = timezone.now()
+            request.session['pending_workhand_registration'] = {
+                'username': data['username'], 'email': data['email'], 'password': data['password'],
+                'fname': data['fname'], 'lname': data['lname'], 'category_id': data['category'].id,
+                'state': data.get('state', ''), 'city': data.get('city', ''),
+                'propic_path': propic_path,
+                'otp': otp,
+                'expires_at': (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+                'last_sent_at': now.isoformat(),
+            }
             send_notification_email(
-                "Welcome to Sparky Events!",
-                welcome_message(myuser.first_name, "You can now start applying for events as a WorkHand."),
-                myuser.email,
+                "Your SparkyEvents verification code",
+                otp_message(data['fname'], otp),
+                data['email'],
             )
-            messages.success(request, 'Successfully registered. You can now log in!')
-            return redirect('workhandlogin')
+            messages.success(request, f"We've sent a 6-digit code to {data['email']}.")
+            return redirect('verifyworkhandotp')
         else:
             for field_errors in register_form.errors.values():
                 for error in field_errors:
                     messages.error(request, error)
 
     return render(request, 'workdas/workhand_login.html', {'cat': cat, 'register_form': register_form})
+
+
+def verify_workhand_otp(request):
+    pending = request.session.get('pending_workhand_registration')
+    if not pending:
+        messages.error(request, "No pending registration found. Please register again.")
+        return redirect('workhandregister')
+
+    if request.method == 'POST':
+        entered = request.POST.get('otp', '').strip()
+        expires_at = datetime.datetime.fromisoformat(pending['expires_at'])
+        if timezone.now() > expires_at:
+            messages.error(request, "That code has expired. Request a new one below.")
+        elif entered == pending['otp']:
+            category = get_object_or_404(WorkhandCategory, id=pending['category_id'])
+            myuser = User.objects.create_user(
+                username=pending['username'], email=pending['email'], password=pending['password'],
+                first_name=pending['fname'], last_name=pending['lname'],
+            )
+            Workhand.objects.create(
+                user=myuser, workhand_category=category,
+                state=pending.get('state', ''), city=pending.get('city', ''),
+                profile_pic=pending.get('propic_path') or Workhand._meta.get_field('profile_pic').default,
+            )
+            send_notification_email(
+                "Welcome to Sparky Events!",
+                welcome_message(myuser.first_name, "You can now start applying for events as a WorkHand."),
+                myuser.email,
+            )
+            del request.session['pending_workhand_registration']
+            messages.success(request, 'Email verified! Your account is ready — please log in.')
+            return redirect('workhandlogin')
+        else:
+            messages.error(request, "Incorrect code, please try again.")
+
+    return render(request, 'workdas/verify_otp.html', {'email': pending['email']})
+
+
+def resend_workhand_otp(request):
+    pending = request.session.get('pending_workhand_registration')
+    if not pending:
+        messages.error(request, "No pending registration found.")
+        return redirect('workhandregister')
+
+    last_sent = datetime.datetime.fromisoformat(pending['last_sent_at'])
+    if (timezone.now() - last_sent).total_seconds() < OTP_RESEND_COOLDOWN_SECONDS:
+        messages.error(request, "Please wait a bit before requesting another code.")
+        return redirect('verifyworkhandotp')
+
+    otp = generate_otp()
+    now = timezone.now()
+    pending['otp'] = otp
+    pending['expires_at'] = (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat()
+    pending['last_sent_at'] = now.isoformat()
+    request.session['pending_workhand_registration'] = pending
+
+    send_notification_email("Your SparkyEvents verification code", otp_message(pending['fname'], otp), pending['email'])
+    messages.success(request, "A new code has been sent.")
+    return redirect('verifyworkhandotp')
 
 
 def workhand_login(request):
@@ -178,10 +308,23 @@ def workhand_dashboard(request):
     eh = (EventHistory.objects
           .filter(workhand_id=wu)
           .select_related('event_category', 'workhand_category', 'company_id__user')[:5])
+    attach_category_icons(eh)
 
     ap = WorkhandApplications.objects.filter(workhand=wu).select_related('event', 'to_company__user')
+    pending_count = ap.filter(status=False).count()
 
-    return render(request, 'workdas/workhand_dashboard.html', {'wu': wu, 'eh': eh, 'ap': ap})
+    upcoming_gigs = (WorkhandApplications.objects
+                      .filter(workhand=wu, status=True, event__start_date__gte=datetime.date.today())
+                      .select_related('event__event_category', 'to_company__user')
+                      .order_by('event__start_date')[:5])
+    attach_category_icons([g.event for g in upcoming_gigs if g.event_id])
+
+    total_earnings = EventHistory.objects.filter(workhand_id=wu).aggregate(total=Sum('payment_range'))['total'] or 0
+
+    return render(request, 'workdas/workhand_dashboard.html', {
+        'wu': wu, 'eh': eh, 'ap': ap, 'pending_count': pending_count,
+        'upcoming_gigs': upcoming_gigs, 'total_earnings': total_earnings,
+    })
 
 
 @workhand_required
@@ -230,15 +373,31 @@ def workhand_change_password(request):
     return redirect(reverse('workhandprofile') + '#profile-change-password')
 
 
-@login_required
+@workhand_required
 def search_events(request):
     wu = get_object_or_404(Workhand, user=request.user)
-    events = Event.objects.select_related('event_category', 'workhand_category', 'company_id__user')
+    events = Event.objects.select_related('event_category', 'workhand_category', 'company_id__user').order_by('-id')
+
+    selected_category = request.GET.get('category', '').strip()
+    selected_city = request.GET.get('city', '').strip()
+
+    if selected_category:
+        events = events.filter(event_category_id=selected_category)
+    if selected_city:
+        events = events.filter(city__icontains=selected_city)
+
+    paginator = Paginator(events, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons(page_obj)
+
     applied_event_ids = set(
         WorkhandApplications.objects.filter(workhand=wu).values_list('event_id', flat=True)
     )
+
     return render(request, 'workdas/search_events.html', {
-        'events': events, 'wu': wu, 'applied_event_ids': applied_event_ids,
+        'page_obj': page_obj, 'wu': wu, 'applied_event_ids': applied_event_ids,
+        'categories': EventsCategory.objects.all(),
+        'selected_category': selected_category, 'selected_city': selected_city,
     })
 
 
@@ -246,6 +405,18 @@ def search_events(request):
 def apply_for_event(request, id):
     wu = get_object_or_404(Workhand, user=request.user)
     applied_event = get_object_or_404(Event, id=id)
+
+    required_fields = {
+        'Contact number': wu.contact, 'Address': wu.address,
+        'State': wu.state, 'City': wu.city,
+    }
+    missing = [label for label, value in required_fields.items() if not value]
+    if missing:
+        messages.error(
+            request,
+            f"Complete your profile before applying — missing: {', '.join(missing)}.",
+        )
+        return redirect('workhandprofile')
 
     try:
         with transaction.atomic():
@@ -267,32 +438,42 @@ def apply_for_event(request, id):
 @workhand_required
 def approved(request):
     wu = get_object_or_404(Workhand, user=request.user)
-    app = WorkhandApplications.objects.filter(workhand=wu).select_related('event', 'to_company__user')
-    return render(request, 'workdas/approved_applications.html', {'app': app, 'wu': wu})
+    applications = WorkhandApplications.objects.filter(workhand=wu).select_related(
+        'event__event_category', 'to_company__user'
+    ).order_by('-id')
+    paginator = Paginator(applications, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons([a.event for a in page_obj if a.event_id])
+    return render(request, 'workdas/approved_applications.html', {'page_obj': page_obj, 'wu': wu})
 
 
-@workhand_required
+@company_required
 @require_POST
-def event_completed(request, id):
-    wu = get_object_or_404(Workhand, user=request.user)
-    # Ownership check: this application must belong to the logged-in workhand.
-    workhand_application = get_object_or_404(WorkhandApplications, id=id, workhand=wu)
-    e = get_object_or_404(Event, id=workhand_application.event_id)
+def mark_event_completed(request, id):
+    company = get_object_or_404(Company, user=request.user)
+    # Ownership check: only the company that owns this event can close it out.
+    e = get_object_or_404(Event, id=id, company_id=company)
 
-    EventHistory.objects.create(
-        event_name=e.event_name, description=e.description,
-        start_date=e.start_date, end_date=e.end_date,
-        event_category=e.event_category, workhand_category=e.workhand_category,
-        workhand_needed=e.workhand_needed, payment_range=e.payment_range,
-        address=e.address, state=e.state, city=e.city,
-        company_id=e.company_id, workhand_id=wu,
-    )
+    approved_applications = WorkhandApplications.objects.filter(event=e, status=True).select_related('workhand')
 
-    workhand_application.delete()
+    # Create one EventHistory record per approved workhand, so everyone who
+    # actually worked the event keeps a real record of it (and can receive
+    # feedback) - not just whichever person happened to close it out.
+    for application in approved_applications:
+        EventHistory.objects.create(
+            event_name=e.event_name, description=e.description,
+            start_date=e.start_date, end_date=e.end_date,
+            event_category=e.event_category, workhand_category=e.workhand_category,
+            workhand_needed=e.workhand_needed, payment_range=e.payment_range,
+            address=e.address, state=e.state, city=e.city,
+            company_id=e.company_id, workhand_id=application.workhand,
+        )
+
     WorkhandApplications.objects.filter(event=e).delete()
     e.delete()
 
-    return redirect('approved')
+    messages.success(request, f"Event marked completed. {approved_applications.count()} workhand(s) recorded to history.")
+    return redirect('manageevent')
 
 
 @workhand_required
@@ -311,27 +492,93 @@ def company_register(request):
     if request.method == 'POST':
         if register_form.is_valid():
             data = register_form.cleaned_data
-            myuser = User.objects.create_user(
-                username=data['username'], email=data['email'], password=data['password'],
-                first_name=data['cname'],
-            )
-            Company.objects.create(
-                user=myuser, company_name=data['cname'],
-                profile_pic=data.get('propic') or Company._meta.get_field('profile_pic').default,
-            )
+            propic_path = None
+            if data.get('propic'):
+                propic_path = default_storage.save(
+                    f"pending_uploads/{data['username']}_{data['propic'].name}", data['propic']
+                )
+
+            otp = generate_otp()
+            now = timezone.now()
+            request.session['pending_company_registration'] = {
+                'username': data['username'], 'email': data['email'], 'password': data['password'],
+                'cname': data['cname'], 'state': data.get('state', ''), 'city': data.get('city', ''),
+                'propic_path': propic_path,
+                'otp': otp,
+                'expires_at': (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+                'last_sent_at': now.isoformat(),
+            }
             send_notification_email(
-                "Welcome to Sparky Events!",
-                welcome_message(myuser.first_name, "Start posting events and get them staffed faster."),
-                myuser.email,
+                "Your SparkyEvents verification code",
+                otp_message(data['cname'], otp),
+                data['email'],
             )
-            messages.success(request, 'Successfully registered. You can now log in!')
-            return redirect('companylogin')
+            messages.success(request, f"We've sent a 6-digit code to {data['email']}.")
+            return redirect('verifycompanyotp')
         else:
             for field_errors in register_form.errors.values():
                 for error in field_errors:
                     messages.error(request, error)
 
     return render(request, 'comdas/company_login.html', {'register_form': register_form})
+
+
+def verify_company_otp(request):
+    pending = request.session.get('pending_company_registration')
+    if not pending:
+        messages.error(request, "No pending registration found. Please register again.")
+        return redirect('companyregister')
+
+    if request.method == 'POST':
+        entered = request.POST.get('otp', '').strip()
+        expires_at = datetime.datetime.fromisoformat(pending['expires_at'])
+        if timezone.now() > expires_at:
+            messages.error(request, "That code has expired. Request a new one below.")
+        elif entered == pending['otp']:
+            myuser = User.objects.create_user(
+                username=pending['username'], email=pending['email'], password=pending['password'],
+                first_name=pending['cname'],
+            )
+            Company.objects.create(
+                user=myuser, company_name=pending['cname'],
+                state=pending.get('state', ''), city=pending.get('city', ''),
+                profile_pic=pending.get('propic_path') or Company._meta.get_field('profile_pic').default,
+            )
+            send_notification_email(
+                "Welcome to Sparky Events!",
+                welcome_message(myuser.first_name, "Start posting events and get them staffed faster."),
+                myuser.email,
+            )
+            del request.session['pending_company_registration']
+            messages.success(request, 'Email verified! Your account is ready — please log in.')
+            return redirect('companylogin')
+        else:
+            messages.error(request, "Incorrect code, please try again.")
+
+    return render(request, 'comdas/verify_otp.html', {'email': pending['email']})
+
+
+def resend_company_otp(request):
+    pending = request.session.get('pending_company_registration')
+    if not pending:
+        messages.error(request, "No pending registration found.")
+        return redirect('companyregister')
+
+    last_sent = datetime.datetime.fromisoformat(pending['last_sent_at'])
+    if (timezone.now() - last_sent).total_seconds() < OTP_RESEND_COOLDOWN_SECONDS:
+        messages.error(request, "Please wait a bit before requesting another code.")
+        return redirect('verifycompanyotp')
+
+    otp = generate_otp()
+    now = timezone.now()
+    pending['otp'] = otp
+    pending['expires_at'] = (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat()
+    pending['last_sent_at'] = now.isoformat()
+    request.session['pending_company_registration'] = pending
+
+    send_notification_email("Your SparkyEvents verification code", otp_message(pending['cname'], otp), pending['email'])
+    messages.success(request, "A new code has been sent.")
+    return redirect('verifycompanyotp')
 
 
 def company_login(request):
@@ -364,9 +611,29 @@ def company_forget(request):
 @company_required
 def company_dashboard(request):
     company = get_object_or_404(Company, user=request.user)
-    events = Event.objects.filter(company_id=company).select_related('event_category', 'workhand_category')
-    eh = EventHistory.objects.filter(company_id=company).select_related('workhand_id__user')[:5]
-    return render(request, 'comdas/company_dashboard.html', {'events': events, 'c': company, 'eh': eh})
+    events = (Event.objects
+              .filter(company_id=company)
+              .select_related('event_category', 'workhand_category')
+              .annotate(approved_count=Count('workhandapplications', filter=Q(workhandapplications__status=True)))[:5])
+    attach_category_icons(events)
+
+    eh = EventHistory.objects.filter(company_id=company).select_related('workhand_id__user', 'event_category')[:5]
+    attach_category_icons(eh)
+
+    pending_count = WorkhandApplications.objects.filter(to_company=company, status=False).count()
+
+    total_spend = EventHistory.objects.filter(company_id=company).aggregate(total=Sum('payment_range'))['total'] or 0
+
+    upcoming_events = (Event.objects
+                        .filter(company_id=company, start_date__gte=datetime.date.today())
+                        .select_related('event_category')
+                        .order_by('start_date')[:5])
+    attach_category_icons(upcoming_events)
+
+    return render(request, 'comdas/company_dashboard.html', {
+        'events': events, 'c': company, 'eh': eh,
+        'pending_count': pending_count, 'upcoming_events': upcoming_events, 'total_spend': total_spend,
+    })
 
 
 @company_required
@@ -474,8 +741,15 @@ def delete_event(request, id):
 @company_required
 def manage_event(request):
     company = get_object_or_404(Company, user=request.user)
-    events = Event.objects.filter(company_id=company).select_related('event_category', 'workhand_category')
-    return render(request, 'comdas/manage.html', {'events': events, 'c': company})
+    events = (Event.objects
+              .filter(company_id=company)
+              .select_related('event_category', 'workhand_category')
+              .annotate(approved_count=Count('workhandapplications', filter=Q(workhandapplications__status=True)))
+              .order_by('-id'))
+    paginator = Paginator(events, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons(page_obj)
+    return render(request, 'comdas/manage.html', {'page_obj': page_obj, 'c': company})
 
 
 @company_required
@@ -483,8 +757,12 @@ def approve_applications(request):
     company = get_object_or_404(Company, user=request.user)
     applications = (WorkhandApplications.objects
                      .filter(to_company=company)
-                     .select_related('workhand__user', 'event'))
-    return render(request, 'comdas/approve_applications.html', {'app': applications, 'c': company})
+                     .select_related('workhand__user', 'event__event_category')
+                     .order_by('-id'))
+    paginator = Paginator(applications, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons([a.event for a in page_obj if a.event_id])
+    return render(request, 'comdas/approve_applications.html', {'page_obj': page_obj, 'c': company})
 
 
 @company_required
@@ -545,15 +823,21 @@ def company_logout(request):
 @workhand_required
 def workhand_event_history(request):
     wu = get_object_or_404(Workhand, user=request.user)
-    eh = EventHistory.objects.filter(workhand_id=wu).select_related('company_id__user')
-    return render(request, 'workdas/history.html', {'eh': eh, 'wu': wu})
+    eh = EventHistory.objects.filter(workhand_id=wu).select_related('company_id__user', 'event_category').order_by('-id')
+    paginator = Paginator(eh, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons(page_obj)
+    return render(request, 'workdas/history.html', {'page_obj': page_obj, 'wu': wu})
 
 
 @company_required
 def company_event_history(request):
     company = get_object_or_404(Company, user=request.user)
-    eh = EventHistory.objects.filter(company_id=company).select_related('workhand_id__user')
-    return render(request, 'comdas/event_history.html', {'eh': eh, 'c': company})
+    eh = EventHistory.objects.filter(company_id=company).select_related('workhand_id__user', 'event_category').order_by('-id')
+    paginator = Paginator(eh, 8)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    attach_category_icons(page_obj)
+    return render(request, 'comdas/event_history.html', {'page_obj': page_obj, 'c': company})
 
 
 @company_required

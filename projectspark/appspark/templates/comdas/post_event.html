@@ -49,13 +49,15 @@
                 <div class="row mb-3">
                     <label for="sdate" class="col-sm-3 col-form-label">Start Date:</label>
                     <div class="col-sm-9">
-                        <input type="date" id="sdate" class="form-control" name="start_date" required>
+                        <input type="text" id="sdate" class="form-control" name="start_date" placeholder="Pick a date below" readonly required>
+                        <div id="sdate-calendar" class="mt-2"></div>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <label for="edate" class="col-sm-3 col-form-label">End Date:</label>
                     <div class="col-sm-9">
-                        <input type="date" id="edate" class="form-control" name="end_date" required>
+                        <input type="text" id="edate" class="form-control" name="end_date" placeholder="Pick a date below" readonly required>
+                        <div id="edate-calendar" class="mt-2"></div>
                     </div>
                 </div>
                 <div class="row mb-3">
@@ -90,13 +92,17 @@
                 <div class="row mb-3">
                     <label for="state" class="col-sm-3 col-form-label">State:</label>
                     <div class="col-sm-9">
-                        <input type="text" id="state" class="form-control" name="state" required>
+                        <select id="state" class="form-select" name="state" required disabled>
+                            <option value="" selected>Loading states...</option>
+                        </select>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <label for="city" class="col-sm-3 col-form-label">City:</label>
                     <div class="col-sm-9">
-                        <input type="text" id="city" class="form-control" name="city" required>
+                        <select id="city" class="form-select" name="city" required disabled>
+                            <option value="" selected>Select a state first</option>
+                        </select>
                     </div>
                 </div>
 
@@ -113,5 +119,41 @@
     </div>
 
 </div>
+
+<script src="{% static 'js/location-dropdowns.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initLocationDropdowns({ countryId: 'country', stateId: 'state', cityId: 'city' });
+    });
+</script>
+
+<!-- Inline calendars for date selection - visible immediately, no click needed -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var startInput = document.getElementById('sdate');
+        var endInput = document.getElementById('edate');
+
+        var endPicker = flatpickr('#edate-calendar', {
+            inline: true,
+            dateFormat: 'Y-m-d',
+            minDate: 'today',
+            onChange: function (selectedDates, dateStr) {
+                endInput.value = dateStr;
+            },
+        });
+
+        flatpickr('#sdate-calendar', {
+            inline: true,
+            dateFormat: 'Y-m-d',
+            minDate: 'today',
+            onChange: function (selectedDates, dateStr) {
+                startInput.value = dateStr;
+                endPicker.set('minDate', dateStr); // end date can never be before start date
+            },
+        });
+    });
+</script>
 
 {% endblock %}

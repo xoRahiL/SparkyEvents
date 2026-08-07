@@ -19,7 +19,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 # --- Core security settings, all from environment ---
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1','10.144.199.52'])
 
 # --- Email, no longer hardcoded ---
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
+    'django_extensions',
     'appspark',
 ]
 
@@ -135,6 +137,12 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 
 # --- Celery, background task queue (uses Redis as the message broker) ---
+# On free hosting tiers (Render, etc.) there's usually no way to run a
+# persistent Celery worker process for free, so this lets production simply
+# set USE_CELERY=False in its .env and emails send synchronously instead -
+# slightly slower per-request, but zero infrastructure needed. Locally, this
+# stays True so Celery + Redis keep working exactly as before.
+USE_CELERY = env.bool('USE_CELERY', default=True)
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']

@@ -15,11 +15,25 @@
 }
 
 /* --- Sidebar & tab accents (these do NOT sit on a pink background,
-       so brand-colored text stays readable here) --- */
+       so brand-colored text stays readable here) ---
+   IMPORTANT: only the active (:not(.collapsed)) link gets the brand
+   color+background. Inactive/collapsed links must stay untouched (muted
+   navy/grey per the theme's own design) - an earlier attempt at this used
+   !important on a less-specific selector, which incorrectly painted every
+   sidebar link pink regardless of active state, since !important beats
+   specificity even against the theme's own more-specific .collapsed rule. */
+.sidebar-nav .nav-link:not(.collapsed) {
+    color: var(--brand-primary) !important;
+    background: #fdeef1 !important;
+}
+
+.sidebar-nav .nav-link:not(.collapsed) i {
+    color: var(--brand-primary) !important;
+}
+
 .nav-tabs-bordered .nav-link:hover,
 .nav-tabs-bordered .nav-link:focus,
 .nav-tabs-bordered .nav-link.active,
-.sidebar-nav .nav-link i,
 .sidebar-nav .nav-link:hover,
 .sidebar-nav .nav-link:hover i,
 .sidebar-nav .nav-content a.active,
@@ -77,6 +91,33 @@
 
 #header .search-form input::placeholder {
     color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Dashboard stat number typography --- */
+.info-card h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 2.15rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #1a1a2e;
+    margin-bottom: 0;
+    font-variant-numeric: tabular-nums; /* keeps digits evenly spaced while the count-up animation runs, instead of jittering side to side */
+    font-feature-settings: 'tnum' 1;
+}
+
+.info-card .card-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+.info-card .card-title span {
+    color: var(--brand-primary, #f82249);
+    font-weight: 700;
 }
 
 /* --- Buttons: force explicit white text so it never blends into the

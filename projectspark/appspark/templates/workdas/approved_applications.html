@@ -1,7 +1,9 @@
 {% extends 'workdas/workhand_dashboard.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block content %}
+
+{% include 'partials/messages.html' %}
 
 <div class="pagetitle">
     <h1>Approved Applications</h1>
@@ -13,67 +15,103 @@
     </nav>
 </div>
 
-{% include 'partials/messages.html' %}
+{% if page_obj %}
+<div class="text-muted small mb-3">{{ page_obj.paginator.count }} application{{ page_obj.paginator.count|pluralize }}</div>
 
-<div class="col-xxl">
-    <div class="card recent-sales overflow-auto">
-        <div class="card-body">
-            <h5 class="card-title">Approved <span>| Events</span></h5>
-
-            {% if app %}
-            <table class="table table-borderless datatable">
-                <thead>
-                <tr>
-                    <th scope="col">Company</th>
-                    <th scope="col">Event</th>
-                    <th scope="col" class="d-none d-lg-table-cell">Contact</th>
-                    <th scope="col">Dates</th>
-                    <th scope="col" class="d-none d-md-table-cell">Location</th>
-                    <th scope="col">Budget</th>
-                    <th scope="col">Action</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for application in app %}
-                {% if application.status %}
-                <tr>
-                    <td>
-                        {{ application.to_company.user.first_name }}
-                        <div class="text-muted small">{{ application.to_company.user.email }}</div>
-                    </td>
-                    <td>
-                        <strong>{{ application.event.event_name }}</strong>
-                        <div class="text-muted small">{{ application.event.event_category }}</div>
-                    </td>
-                    <td class="d-none d-lg-table-cell">{{ application.to_company.contact }}</td>
-                    <td class="small">{{ application.event.start_date }} &rarr; {{ application.event.end_date }}</td>
-                    <td class="d-none d-md-table-cell">{{ application.event.city }}, {{ application.event.state }}</td>
-                    <td>{{ application.event.payment_range }}</td>
-                    <td>
-                        <form method="post" action="{% url 'eventcompleted' application.id %}"
-                              onsubmit="return confirm('Mark this event as completed? This will move it to your history and cannot be undone.');">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-primary btn-sm" title="Mark Completed">
-                                <i class="bi bi-check2-circle"></i> Mark Completed
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="bi bi-hourglass-split" style="font-size: 2.5rem; opacity: 0.4;"></i>
-                <p class="text-muted mt-3 mb-3">No approved applications yet.</p>
-                <a href="{% url 'searchevents' %}" class="btn btn-primary">
-                    <i class="bi bi-search"></i> Find Events to Apply
-                </a>
+<div class="row g-4">
+    {% for application in page_obj %}
+    <div class="col-md-6">
+        <div class="card h-100 event-card">
+            <div class="event-banner">
+                <i class="bi {{ application.event.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                <img class="company-avatar" src="{{ application.to_company.profile_pic.url }}" alt="{{ application.to_company.user.first_name }}" onerror="this.onerror=null;this.outerHTML='<div class=&quot;company-avatar&quot;>{{ application.to_company.user.first_name|first|upper }}</div>';">
             </div>
-            {% endif %}
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small">{{ application.to_company.user.first_name }}</span>
+                    {% if application.status %}
+                    <span class="badge bg-success">Approved</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                </div>
+
+                <h5 class="card-title mb-1">{{ application.event.event_name }}</h5>
+                <div class="text-muted small mb-2">
+                    <i class="bi bi-geo-alt"></i> {{ application.event.city }}, {{ application.event.state }}
+                </div>
+
+                <div class="stat-row mb-3">
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="stat-value">₹{{ application.event.payment_range|floatformat:0|intcomma }}</div>
+                            <div class="stat-label">Budget</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-calendar-event"></i>
+                        <div>
+                            <div class="stat-value">{{ application.event.start_date }}</div>
+                            <div class="stat-label">Start Date</div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if application.status %}
+                <div class="mt-auto text-center small text-muted py-2">
+                    <i class="bi bi-info-circle"></i> The company will mark this event completed once it's done.
+                </div>
+                {% else %}
+                <button type="button" class="btn btn-secondary w-100 mt-auto" disabled>Waiting for approval</button>
+                {% endif %}
+            </div>
         </div>
     </div>
+    {% endfor %}
 </div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-hourglass-split" style="font-size: 2.5rem; opacity: 0.4;"></i>
+    <p class="text-muted mt-3 mb-3">No applications yet.</p>
+    <a href="{% url 'searchevents' %}" class="btn btn-primary">
+        <i class="bi bi-search"></i> Find Events to Apply
+    </a>
+</div>
+{% endif %}
+
+<style>
+    .event-card { border: 1px solid #eee; border-radius: 14px; overflow: hidden; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .event-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.1); }
+    .event-banner { position: relative; height: 90px; background: linear-gradient(135deg, var(--brand-primary, #f82249), var(--brand-primary-dark, #e0072f)); display: flex; align-items: center; justify-content: center; }
+    .event-banner i { font-size: 2.75rem; color: rgba(255,255,255,0.9); }
+    .company-avatar { position: absolute; bottom: -18px; left: 16px; width: 40px; height: 40px; border-radius: 50%; background: #fff; color: var(--brand-primary, #f82249); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .card-body { padding-top: 1.75rem; }
+    .stat-row { display: flex; gap: 8px; }
+    .stat-chip { flex: 1; display: flex; align-items: center; gap: 6px; background: #f8f9fc; border-radius: 8px; padding: 8px 6px; min-width: 0; overflow: hidden; }
+    .stat-chip > div { min-width: 0; overflow: hidden; }
+    .stat-chip i { color: var(--brand-primary, #f82249); font-size: 1.1rem; flex-shrink: 0; }
+    .stat-value { font-size: 0.8rem; font-weight: 700; line-height: 1.2; white-space: normal; overflow-wrap: break-word; }
+    .stat-label { font-size: 0.65rem; color: #888; }
+</style>
 
 {% endblock %}

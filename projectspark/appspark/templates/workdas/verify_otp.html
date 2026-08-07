@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="{% static 'bootstrapcss/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'logincss/style.css' %}">
+</head>
+<body style="background-image: url('{% static 'assets/img/hero-bg.jpg' %}')" class="text-dark bg-dark">
+
+{% include 'partials/messages.html' %}
+
+<div class="container w-50">
+    <div class="forms">
+        <div class="form login">
+            <span class="title">Verify Your Email</span>
+            <p class="text-center text-muted small mb-4">
+                We sent a 6-digit code to <strong>{{ email }}</strong>. It expires in 15 minutes.
+            </p>
+
+            <form action="{% url 'verifyworkhandotp' %}" method="post">
+                {% csrf_token %}
+                <div class="input-field">
+                    <input type="text" name="otp" placeholder="Enter 6-digit code" maxlength="6"
+                           inputmode="numeric" pattern="[0-9]{6}" required autofocus
+                           style="letter-spacing: 6px; text-align: center; font-size: 1.2rem;">
+                    <i class="uil uil-shield-check icon"></i>
+                </div>
+                <div class="input-field button">
+                    <input type="submit" value="Verify">
+                </div>
+            </form>
+
+            <form action="{% url 'resendworkhandotp' %}" method="post" class="text-center mt-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-link text-decoration-none">Didn't get it? Resend code</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/form-loading.js' %}"></script>
+</body>
+</html>

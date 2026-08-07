@@ -6,6 +6,8 @@ urlpatterns = [
 
     # WORKHAND LOGIN SIDE
     path('workhandregister/', views.workhand_register, name='workhandregister'),
+    path('verifyworkhandotp/', views.verify_workhand_otp, name='verifyworkhandotp'),
+    path('resendworkhandotp/', views.resend_workhand_otp, name='resendworkhandotp'),
     path('workhandlogin/', views.workhand_login, name='workhandlogin'),
     path('workhandlogout/', views.workhand_logout, name='workhandlogout'),
     path('workhandforget/', views.workhand_forget, name='workhandforget'),
@@ -17,10 +19,12 @@ urlpatterns = [
     path('searchevents/', views.search_events, name='searchevents'),
     path('applyforevent/<int:id>/', views.apply_for_event, name='applyforevent'),
     path('approved/', views.approved, name='approved'),
-    path('eventcompleted/<int:id>/', views.event_completed, name='eventcompleted'),
+    path('markeventcompleted/<int:id>/', views.mark_event_completed, name='markeventcompleted'),
 
     # COMPANY LOGIN SIDE
     path('companyregister/', views.company_register, name='companyregister'),
+    path('verifycompanyotp/', views.verify_company_otp, name='verifycompanyotp'),
+    path('resendcompanyotp/', views.resend_company_otp, name='resendcompanyotp'),
     path('companylogin/', views.company_login, name='companylogin'),
     path('companylogout/', views.company_logout, name='companylogout'),
     path('companyforget/', views.company_forget, name='companyforget'),

@@ -58,7 +58,7 @@ body {
 }
 
 .container.active .forms {
-    height: 600px;
+    height: 780px; /* raised from 600px to fit the new state/city fields without cutting off content */
 }
 
 .container .form .title {
