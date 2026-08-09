@@ -28,6 +28,11 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 
+# Resend uses HTTPS, which works on Render's free web service. SMTP is blocked
+# there, so application emails use the Resend API instead of EMAIL_* settings.
+RESEND_API_KEY = env('RESEND_API_KEY', default='')
+RESEND_FROM_EMAIL = env('RESEND_FROM_EMAIL', default='onboarding@resend.dev')
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
