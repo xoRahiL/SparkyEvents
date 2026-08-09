@@ -6,7 +6,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
@@ -172,6 +172,17 @@ def generate_otp():
     return str(random.randint(100000, 999999))
 
 
+def authenticate_role_user(identifier, password, role_model):
+    """Authenticate by username or email, then enforce the account role."""
+    identifier = identifier.strip()
+    user = (User.objects
+            .filter(Q(username__iexact=identifier) | Q(email__iexact=identifier), is_active=True)
+            .first())
+    if user and user.check_password(password) and role_model.objects.filter(user=user).exists():
+        return user
+    return None
+
+
 def index(request):
     return render(request, 'index.html')
 
@@ -286,18 +297,14 @@ def workhand_login(request):
             identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            workhand = (Workhand.objects.select_related('user')
-                        .filter(Q(user__username__iexact=identifier) | Q(user__email__iexact=identifier))
-                        .first())
-            if workhand:
-                myuser = authenticate(request, username=workhand.user.username, password=password)
-                if myuser is not None:
-                    login(request, myuser)
-                    messages.success(request, "Successfully logged in!")
-                    send_notification_email(
-                        "Login Alert", login_alert_message(myuser.first_name), myuser.email,
-                    )
-                    return redirect('workhanddashboard')
+            myuser = authenticate_role_user(identifier, password, Workhand)
+            if myuser is not None:
+                login(request, myuser)
+                messages.success(request, "Successfully logged in!")
+                send_notification_email(
+                    "Login Alert", login_alert_message(myuser.first_name), myuser.email,
+                )
+                return redirect('workhanddashboard')
 
             messages.error(request, 'Invalid username or password!')
 
@@ -596,18 +603,14 @@ def company_login(request):
             identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            company = (Company.objects.select_related('user')
-                       .filter(Q(user__username__iexact=identifier) | Q(user__email__iexact=identifier))
-                       .first())
-            if company:
-                myuser = authenticate(request, username=company.user.username, password=password)
-                if myuser is not None:
-                    login(request, myuser)
-                    messages.success(request, "Login successful!")
-                    send_notification_email(
-                        "Login Alert", login_alert_message(myuser.first_name), myuser.email,
-                    )
-                    return redirect('companydashboard')
+            myuser = authenticate_role_user(identifier, password, Company)
+            if myuser is not None:
+                login(request, myuser)
+                messages.success(request, "Login successful!")
+                send_notification_email(
+                    "Login Alert", login_alert_message(myuser.first_name), myuser.email,
+                )
+                return redirect('companydashboard')
 
             messages.error(request, 'Invalid username or password!')
 

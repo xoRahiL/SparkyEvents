@@ -149,6 +149,13 @@ body {
     font-size: 14px;
 }
 
+/* Username guidance must remain readable on the white form background. */
+.username-help {
+    color: #212529 !important;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
 .form a.text {
     color: #f82249;
     text-decoration: none;
