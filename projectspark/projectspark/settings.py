@@ -149,7 +149,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # used by `collectstatic` in production
 # Compressed storage (not the Manifest variant) so a slightly stale/missing
 # {% static %} reference just 404s that one file instead of failing the
 # entire `collectstatic` run.
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+    },
+}
 
 # User-uploaded files must not be stored on Render's ephemeral filesystem.
 # When Cloudinary credentials are configured (production), Django's default
@@ -165,13 +170,8 @@ if all((CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET)):
         'API_KEY': CLOUDINARY_API_KEY,
         'API_SECRET': CLOUDINARY_API_SECRET,
     }
-    STORAGES = {
-        'default': {
-            'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
-        },
+    STORAGES['default'] = {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
     }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
