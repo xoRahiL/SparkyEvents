@@ -9,7 +9,7 @@ from .models import (
 # ---------- Shared mixin for the "register" forms ----------
 class BaseRegisterForm(forms.Form):
     """Common fields + validation shared by Workhand and Company registration."""
-    username = forms.CharField(max_length=10)
+    username = forms.CharField(max_length=50)
     email = forms.EmailField()
     password = forms.CharField(widget=forms.PasswordInput)
     propic = forms.ImageField(required=False)
@@ -50,7 +50,7 @@ class LoginForm(forms.Form):
 
 # ---------- Profile forms (ModelForms, closer to the real schema) ----------
 class WorkhandProfileForm(forms.ModelForm):
-    username = forms.CharField(max_length=10)
+    username = forms.CharField(max_length=50)
     fname = forms.CharField(max_length=50)
     lname = forms.CharField(max_length=50)
     email = forms.EmailField()
@@ -67,7 +67,7 @@ class WorkhandProfileForm(forms.ModelForm):
 
 
 class CompanyProfileForm(forms.ModelForm):
-    username = forms.CharField(max_length=10)
+    username = forms.CharField(max_length=50)
     company_name = forms.CharField(max_length=50)
     email = forms.EmailField()
 

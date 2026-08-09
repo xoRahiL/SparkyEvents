@@ -40,6 +40,20 @@ function initLocationDropdowns(config) {
         });
     }
 
+    function enableManualEntry(select, placeholder) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = select.id;
+        input.name = select.name;
+        input.className = select.className;
+        input.placeholder = placeholder;
+        input.value = select.dataset.initial || '';
+        input.disabled = false;
+        input.required = select.required;
+        select.replaceWith(input);
+        return input;
+    }
+
     function loadStates(country, preselect) {
         stateSelect.disabled = true;
         citySelect.disabled = true;
@@ -53,7 +67,8 @@ function initLocationDropdowns(config) {
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 if (data.error || !data.data || !data.data.states) {
-                    setOptions(stateSelect, [], 'Could not load states - type manually below');
+                    enableManualEntry(stateSelect, 'Enter your state');
+                    enableManualEntry(citySelect, 'Enter your city');
                     return;
                 }
                 const stateNames = data.data.states.map(function (s) { return s.name; });
@@ -66,7 +81,8 @@ function initLocationDropdowns(config) {
                 }
             })
             .catch(function () {
-                setOptions(stateSelect, [], 'Could not load states - type manually below');
+                enableManualEntry(stateSelect, 'Enter your state');
+                enableManualEntry(citySelect, 'Enter your city');
             });
     }
 
@@ -82,7 +98,7 @@ function initLocationDropdowns(config) {
             .then(function (res) { return res.json(); })
             .then(function (data) {
                 if (data.error || !data.data) {
-                    setOptions(citySelect, [], 'Could not load cities - type manually below');
+                    enableManualEntry(citySelect, 'Enter your city');
                     return;
                 }
                 setOptions(citySelect, data.data, 'Select a city');
@@ -93,7 +109,7 @@ function initLocationDropdowns(config) {
                 }
             })
             .catch(function () {
-                setOptions(citySelect, [], 'Could not load cities - type manually below');
+                enableManualEntry(citySelect, 'Enter your city');
             });
     }
 
