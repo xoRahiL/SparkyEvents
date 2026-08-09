@@ -9,10 +9,12 @@
 }
 
 body {
-    height: 100vh;
+    min-height: 100vh;
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px 0;
     /*background: #f82249 url("/img/hero-bg.jpg") top center;*/
 }
 
@@ -179,4 +181,64 @@ body {
 .form .login-signup {
     margin-top: 30px;
     text-align: center;
+}
+
+/* --- Mobile responsiveness ---
+   The container was fixed at 50% width regardless of screen size, which
+   left almost no room for the form on a phone - everything nested inside
+   (inputs, labels, buttons) inherited that same cramped width. */
+@media (max-width: 768px) {
+    .container {
+        width: 94%;
+        margin: 20px auto;
+    }
+    .container .form {
+        padding: 20px;
+    }
+    .container.active .forms {
+        height: auto;
+    }
+    /* Bootstrap grid responsive fixes */
+    .row {
+        margin-right: -5px;
+        margin-left: -5px;
+    }
+    .col-12, [class*='col-'] {
+        padding-right: 5px;
+        padding-left: 5px;
+    }
+    .col-md-6, .col-md-8, .col-md-10,
+    .col-lg-7, .col-lg-9 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    .form .button input {
+        width: 100%;
+    }
+    .form-select, .form-control {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container .form .title {
+        font-size: 22px;
+    }
+    .input-field input {
+        font-size: 15px;
+        padding: 0 30px;
+    }
+    .input-field i {
+        font-size: 20px;
+    }
+    .form .button input {
+        font-size: 15px;
+    }
+    .form-label {
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    .form-select, .form-control {
+        font-size: 14px;
+    }
 }

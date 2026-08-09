@@ -60,13 +60,13 @@
             <form action="{% url 'workhandregister' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="row">
-                    <div class="col">
+                    <div class="col-12 col-md-6">
                         <div class="input-field">
                             <input type="text" placeholder="Enter your first name" name="fname" value="{{ register_form.fname.value|default_if_none:'' }}" required>
                             <i class="uil uil-user"></i>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col-12 col-md-6">
                         <div class="input-field">
                             <input type="text" placeholder="Enter your last name" name="lname" value="{{ register_form.lname.value|default_if_none:'' }}" required>
                             <i class="uil uil-user float-right"></i>
@@ -74,13 +74,13 @@
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col">
+                    <div class="col-12 col-md-6">
                         <div class="input-field">
                             <input type="text" placeholder="Enter your username" name="username" value="{{ register_form.username.value|default_if_none:'' }}" required>
                             <i class="uil uil-user"></i>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col-12 col-md-6">
                         <div class="input-field">
                             <input type="email" placeholder="Enter your email" name="email" value="{{ register_form.email.value|default_if_none:'' }}" required>
                             <i class="uil uil-envelope icon"></i>
@@ -100,8 +100,8 @@
                     </div>
                 </div>
                 <div class="row mt-3">
-                    <label class="col-md-6 col-lg-5 col-form-label" for="category">Choose Workhand Category:</label>
-                    <div class="col-md-6 col-lg-7">
+                    <label class="col-12 col-md-6 col-lg-5 col-form-label" for="category">Choose Workhand Category:</label>
+                    <div class="col-12 col-md-6 col-lg-7">
                         <select class="form-select" aria-label="Workhand category" name="category" id="category" required>
                             <option value="" {% if not register_form.category.value %}selected{% endif %} disabled>Choose a category</option>
                             {% for c in cat %}
@@ -112,16 +112,16 @@
                 </div>
 
                 <div class="row mt-3">
-                    <label class="col-md-6 col-lg-5 col-form-label" for="state">State (optional):</label>
-                    <div class="col-md-6 col-lg-7">
+                    <label class="col-12 col-md-6 col-lg-5 col-form-label" for="state">State (optional):</label>
+                    <div class="col-12 col-md-6 col-lg-7">
                         <select class="form-select" name="state" id="state" disabled>
                             <option value="" selected>Loading states...</option>
                         </select>
                     </div>
                 </div>
                 <div class="row mt-3">
-                    <label class="col-md-6 col-lg-5 col-form-label" for="city">City (optional):</label>
-                    <div class="col-md-6 col-lg-7">
+                    <label class="col-12 col-md-6 col-lg-5 col-form-label" for="city">City (optional):</label>
+                    <div class="col-12 col-md-6 col-lg-7">
                         <select class="form-select" name="city" id="city" disabled>
                             <option value="" selected>Select a state first</option>
                         </select>

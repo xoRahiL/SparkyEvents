@@ -20,7 +20,7 @@ class EventsCategory(models.Model):
 
 class Workhand(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, default="")
-    profile_pic = models.ImageField(upload_to='media', default='assets2/img/AnonymousPic.png')
+    profile_pic = models.ImageField(upload_to='', default='assets2/img/AnonymousPic.png')
     contact = models.CharField(max_length=20, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     state = models.CharField(max_length=50, null=True, blank=True)
@@ -33,7 +33,7 @@ class Workhand(models.Model):
 
 class Company(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, default="")
-    profile_pic = models.ImageField(upload_to='media', default='assets2/img/AnonymousPic.png')
+    profile_pic = models.ImageField(upload_to='', default='assets2/img/AnonymousPic.png')
     company_name = models.CharField(max_length=50, null=True, blank=True)
     contact = models.CharField(max_length=20, null=True, blank=True)
     address = models.TextField(null=True, blank=True)

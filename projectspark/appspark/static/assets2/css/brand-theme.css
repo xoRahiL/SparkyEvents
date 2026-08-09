@@ -120,6 +120,33 @@
     font-weight: 700;
 }
 
+/* --- Profile pictures: fixed size + object-fit:cover, so a non-square
+       uploaded photo gets cropped into a proper circle instead of
+       stretching into an oval (the theme only set max-height, no width
+       or object-fit, which is exactly what caused the distortion). --- */
+.header-nav .nav-profile img {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px;
+    min-height: 36px;
+    max-height: none !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    flex-shrink: 0;
+}
+
+img.rounded-circle {
+    width: 120px !important;
+    height: 120px !important;
+    min-width: 120px;
+    min-height: 120px;
+    max-height: none !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    display: block;
+}
+
 /* --- Buttons: force explicit white text so it never blends into the
        brand-colored background, regardless of Bootstrap's own defaults --- */
 .btn-primary {

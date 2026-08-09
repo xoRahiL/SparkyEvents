@@ -19,7 +19,7 @@ environ.Env.read_env(BASE_DIR / '.env')
 # --- Core security settings, all from environment ---
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1','10.144.199.52'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '*.onrender.com'])
 
 # --- Email, no longer hardcoded ---
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
@@ -36,12 +36,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'django_extensions',
     'appspark',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -72,9 +72,42 @@ TEMPLATES = [
 WSGI_APPLICATION = 'projectspark.wsgi.application'
 
 # --- Database ---
-# Defaults to SQLite (zero setup, just a file) when DB_ENGINE isn't set in .env.
-# Switch to MySQL later by setting DB_ENGINE=mysql plus DB_NAME/DB_USER/etc in .env.
-if env('DB_ENGINE', default='sqlite') == 'mysql':
+# Priority: DATABASE_URL (Render auto-provides) > DB_ENGINE > SQLite default
+# Render provides DATABASE_URL automatically; locally set DB_ENGINE=postgresql|mysql|sqlite
+if env('DATABASE_URL', default=None):
+    # Render provides DATABASE_URL in this format:
+    # postgresql://user:password@host:port/dbname
+    import re
+    db_url = env('DATABASE_URL')
+    match = re.match(r'(\w+)://([^:]+):([^@]+)@([^:/]+):(\d+)/(.+)', db_url)
+    if match:
+        engine, user, password, host, port, name = match.groups()
+        DATABASES = {
+            'default': {
+                'ENGINE': f'django.db.backends.{engine}',
+                'NAME': name,
+                'USER': user,
+                'PASSWORD': password,
+                'HOST': host,
+                'PORT': int(port),
+                'CONN_MAX_AGE': 60,
+            }
+        }
+    else:
+        raise ValueError(f"Invalid DATABASE_URL format: {db_url}")
+elif env('DB_ENGINE', default='sqlite') == 'postgresql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME', default='sparky'),
+            'USER': env('DB_USER', default='postgres'),
+            'PASSWORD': env('DB_PASSWORD', default=''),
+            'HOST': env('DB_HOST', default='localhost'),
+            'PORT': env('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': 60,
+        }
+    }
+elif env('DB_ENGINE', default='sqlite') == 'mysql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -109,6 +142,14 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # used by `collectstatic` in production
 
+# WhiteNoise serves everything gathered into STATIC_ROOT directly from the
+# Django app itself - no separate server, no CDN, no S3 bucket needed, and
+# it works the same whether DEBUG is True or False. Using the plain
+# Compressed storage (not the Manifest variant) so a slightly stale/missing
+# {% static %} reference just 404s that one file instead of failing the
+# entire `collectstatic` run.
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
@@ -128,8 +169,18 @@ MESSAGE_TAGS = {
     message_constants.ERROR: 'danger',
 }
 
-# --- Security hardening, only actually enforced when DEBUG=False ---
-if not DEBUG:
+# --- Security hardening: HTTPS enforcement ---
+# This must be a SEPARATE switch from DEBUG, not tied to it. Django's local
+# dev server (runserver) only ever speaks plain HTTP - it has no TLS support
+# at all. If SECURE_SSL_REDIRECT is on locally, Django tries to force every
+# request to HTTPS, which runserver can't fulfill, and you get garbled
+# "You're accessing over HTTPS but only supports HTTP" crashes.
+# Leave IS_PRODUCTION unset (or False) in your local .env, always.
+# Only set IS_PRODUCTION=True in your actual deployment's .env (Render, etc.),
+# where a real HTTPS-terminating proxy sits in front of the app.
+IS_PRODUCTION = env.bool('IS_PRODUCTION', default=False)
+
+if IS_PRODUCTION:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -142,7 +193,8 @@ if not DEBUG:
 # set USE_CELERY=False in its .env and emails send synchronously instead -
 # slightly slower per-request, but zero infrastructure needed. Locally, this
 # stays True so Celery + Redis keep working exactly as before.
-USE_CELERY = env.bool('USE_CELERY', default=True)
+# Default to False in production, True locally.
+USE_CELERY = env.bool('USE_CELERY', default=not IS_PRODUCTION)
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_ACCEPT_CONTENT = ['json']
