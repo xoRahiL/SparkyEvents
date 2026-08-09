@@ -28,10 +28,10 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
 EMAIL_PORT = env.int('EMAIL_PORT', default=587)
 
-# Resend uses HTTPS, which works on Render's free web service. SMTP is blocked
-# there, so application emails use the Resend API instead of EMAIL_* settings.
-RESEND_API_KEY = env('RESEND_API_KEY', default='')
-RESEND_FROM_EMAIL = env('RESEND_FROM_EMAIL', default='onboarding@resend.dev')
+# Brevo's HTTPS API works on Render's free web service. SMTP is blocked there.
+BREVO_API_KEY = env('BREVO_API_KEY', default='')
+BREVO_FROM_EMAIL = env('BREVO_FROM_EMAIL', default=env('EMAIL_HOST_USER', default=''))
+BREVO_FROM_NAME = env('BREVO_FROM_NAME', default='Sparky Events')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
