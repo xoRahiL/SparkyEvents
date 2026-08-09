@@ -1,9 +1,17 @@
 import logging
 
-from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+
+try:
+    # Keep the test/future worker task without making Celery required.
+    from celery import shared_task
+except ImportError:  # pragma: no cover
+    def shared_task(*args, **kwargs):
+        def decorator(function):
+            return function
+        return decorator
 
 logger = logging.getLogger(__name__)
 

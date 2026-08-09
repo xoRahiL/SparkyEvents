@@ -1,9 +1,17 @@
 import logging
 
-from celery import shared_task
 from django.conf import settings
 from django.template.loader import render_to_string
 import resend
+
+try:
+    # Optional future integration: the web app does not require Celery.
+    from celery import shared_task
+except ImportError:  # pragma: no cover - used only when Celery is absent
+    def shared_task(*args, **kwargs):
+        def decorator(function):
+            return function
+        return decorator
 
 logger = logging.getLogger(__name__)
 

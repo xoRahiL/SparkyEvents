@@ -27,7 +27,7 @@ from .models import (
     Workhand, WorkhandCategory, Company, Event, EventsCategory,
     WorkhandApplications, EventHistory, Feedback,
 )
-from .tasks import send_notification_email_now, send_notification_email_task
+from .tasks import send_notification_email_now
 
 logger = logging.getLogger(__name__)
 
@@ -90,24 +90,12 @@ def workhand_required(view_func):
 
 # ---------------------------------------------------------------------------
 # Small helpers.
-# The free Render service has no Celery worker or Redis broker, so notification
-# emails are sent directly in the current request.
+# Celery remains available as future infrastructure, but the web application
+# must not depend on it. Notification emails are dispatched in a background
+# thread from the web process for now.
 # ---------------------------------------------------------------------------
 def send_notification_email(subject, template_message, to_email):
-    """Queue email work so external email latency never blocks a page load.
-
-    Celery is used when configured. Render's single web service commonly has
-    no worker, so use a short-lived background thread there as a graceful
-    fallback. The request can redirect immediately while the email is sent.
-    """
-    if settings.USE_CELERY:
-        try:
-            send_notification_email_task.delay(subject, template_message, to_email)
-        except Exception:
-            # A missing/unreachable broker must never turn registration or
-            # login into a 500 response.
-            logger.exception("Could not queue email for %s", to_email)
-        return
+    """Send email outside the request without requiring Celery."""
 
     def deliver():
         try:
