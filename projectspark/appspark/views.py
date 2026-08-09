@@ -1,6 +1,7 @@
 import logging
 import datetime
 import random
+import threading
 from functools import wraps
 
 from django.conf import settings
@@ -26,7 +27,7 @@ from .models import (
     Workhand, WorkhandCategory, Company, Event, EventsCategory,
     WorkhandApplications, EventHistory, Feedback,
 )
-from .tasks import send_notification_email_now
+from .tasks import send_notification_email_now, send_notification_email_task
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,23 @@ def workhand_required(view_func):
 # emails are sent directly in the current request.
 # ---------------------------------------------------------------------------
 def send_notification_email(subject, template_message, to_email):
-    send_notification_email_now(subject, template_message, to_email)
+    """Queue email work so external email latency never blocks a page load.
+
+    Celery is used when configured. Render's single web service commonly has
+    no worker, so use a short-lived background thread there as a graceful
+    fallback. The request can redirect immediately while the email is sent.
+    """
+    if settings.USE_CELERY:
+        send_notification_email_task.delay(subject, template_message, to_email)
+        return
+
+    def deliver():
+        try:
+            send_notification_email_now(subject, template_message, to_email)
+        except Exception:
+            logger.exception("Email send failed for %s", to_email)
+
+    threading.Thread(target=deliver, name='notification-email', daemon=True).start()
 
 
 def welcome_message(name, role_line):
@@ -266,11 +283,14 @@ def workhand_login(request):
 
     if request.method == 'POST':
         if login_form.is_valid():
-            username = login_form.cleaned_data['username']
+            identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            if Workhand.objects.filter(user__username=username).exists():
-                myuser = authenticate(request, username=username, password=password)
+            workhand = (Workhand.objects.select_related('user')
+                        .filter(Q(user__username__iexact=identifier) | Q(user__email__iexact=identifier))
+                        .first())
+            if workhand:
+                myuser = authenticate(request, username=workhand.user.username, password=password)
                 if myuser is not None:
                     login(request, myuser)
                     messages.success(request, "Successfully logged in!")
@@ -573,11 +593,14 @@ def company_login(request):
 
     if request.method == 'POST':
         if login_form.is_valid():
-            username = login_form.cleaned_data['username']
+            identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            if Company.objects.filter(user__username=username).exists():
-                myuser = authenticate(request, username=username, password=password)
+            company = (Company.objects.select_related('user')
+                       .filter(Q(user__username__iexact=identifier) | Q(user__email__iexact=identifier))
+                       .first())
+            if company:
+                myuser = authenticate(request, username=company.user.username, password=password)
                 if myuser is not None:
                     login(request, myuser)
                     messages.success(request, "Login successful!")

@@ -29,7 +29,7 @@
             <form action="{% url 'workhandlogin' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your username" name="username" value="{{ login_form.username.value|default_if_none:'' }}" required autofocus>
+                    <input type="text" placeholder="Enter your username or email" name="username" value="{{ login_form.username.value|default_if_none:'' }}" required autofocus>
                     <i class="uil uil-envelope icon"></i>
                 </div>
                 <div class="input-field">
@@ -79,6 +79,9 @@
                             <input type="text" placeholder="Enter your username" name="username" value="{{ register_form.username.value|default_if_none:'' }}" required>
                             <i class="uil uil-user"></i>
                         </div>
+                        <small class="text-light d-block mt-1">
+                            Use 1–50 letters or numbers only—no spaces or symbols. Your username is used to identify and log in to your account; your name and profile details are shown separately.
+                        </small>
                     </div>
                     <div class="col-12 col-md-6">
                         <div class="input-field">
