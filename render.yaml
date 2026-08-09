@@ -10,6 +10,8 @@ services:
         value: "False"
       - key: IS_PRODUCTION
         value: "True"
+      - key: USE_CELERY
+        value: "False"
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_HOSTS
