@@ -1,7 +1,6 @@
 import logging
 import datetime
 import random
-import threading
 from functools import wraps
 
 from django.conf import settings
@@ -27,7 +26,7 @@ from .models import (
     Workhand, WorkhandCategory, Company, Event, EventsCategory,
     WorkhandApplications, EventHistory, Feedback,
 )
-from .tasks import send_notification_email_task
+from .tasks import send_notification_email_now
 
 logger = logging.getLogger(__name__)
 
@@ -90,23 +89,11 @@ def workhand_required(view_func):
 
 # ---------------------------------------------------------------------------
 # Small helpers.
-# send_notification_email now just hands the work to Celery (.delay()) and
-# returns immediately — the actual SMTP call happens on a separate worker
-# process, so the user's request never waits on it.
+# The free Render service has no Celery worker or Redis broker, so notification
+# emails are sent directly in the current request.
 # ---------------------------------------------------------------------------
 def send_notification_email(subject, template_message, to_email):
-    if settings.USE_CELERY:
-        send_notification_email_task.delay(subject, template_message, to_email)
-    else:
-        # No Celery worker available (e.g. free hosting tier). Sending
-        # synchronously here would block the request for several seconds
-        # (real SMTP handshake with Gmail) - a plain background thread gets
-        # the same non-blocking behavior without needing Celery or Redis.
-        threading.Thread(
-            target=send_notification_email_task,
-            args=(subject, template_message, to_email),
-            daemon=True,
-        ).start()
+    send_notification_email_now(subject, template_message, to_email)
 
 
 def welcome_message(name, role_line):
