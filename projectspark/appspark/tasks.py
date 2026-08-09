@@ -19,7 +19,11 @@ def send_notification_email_now(subject, message, to_email):
         'message': message,
     })
     if not settings.RESEND_API_KEY:
-        raise RuntimeError('RESEND_API_KEY is not configured.')
+        logger.error(
+            'Email not sent: RESEND_API_KEY is not configured. '
+            'Add it to the Render environment variables.'
+        )
+        return False
 
     resend.api_key = settings.RESEND_API_KEY
     resend.Emails.send({
@@ -29,6 +33,7 @@ def send_notification_email_now(subject, message, to_email):
         'html': html_body,
         'text': message,
     })
+    return True
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)

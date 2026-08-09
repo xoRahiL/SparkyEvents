@@ -101,7 +101,12 @@ def send_notification_email(subject, template_message, to_email):
     fallback. The request can redirect immediately while the email is sent.
     """
     if settings.USE_CELERY:
-        send_notification_email_task.delay(subject, template_message, to_email)
+        try:
+            send_notification_email_task.delay(subject, template_message, to_email)
+        except Exception:
+            # A missing/unreachable broker must never turn registration or
+            # login into a 500 response.
+            logger.exception("Could not queue email for %s", to_email)
         return
 
     def deliver():
