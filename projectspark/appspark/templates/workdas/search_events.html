@@ -61,6 +61,18 @@
                 </div>
 
                 <h5 class="card-title mb-2">{{ event.event_name }}</h5>
+
+                {% if event.workhand_category %}
+                <div class="role-badge mb-2">
+                    <i class="bi bi-briefcase"></i> Hiring for: <strong>{{ event.workhand_category }}</strong>
+                </div>
+                {% endif %}
+
+                <p class="card-text text-muted small mb-2">
+                    <i class="bi bi-geo-alt"></i>
+                    {{ event.address }}, {{ event.city }}, {{ event.state }}
+                </p>
+
                 <p class="card-text text-muted small mb-3">{{ event.description|truncatewords:14 }}</p>
 
                 <div class="stat-row mb-3">
@@ -85,6 +97,11 @@
                             <div class="stat-label">Starts in</div>
                         </div>
                     </div>
+                </div>
+
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-calendar-event"></i>
+                    {{ event.start_date|date:"d M Y" }} &rarr; {{ event.end_date|date:"d M Y" }}
                 </div>
 
                 {% if event.id in applied_event_ids %}
@@ -216,6 +233,20 @@
     .stat-label {
         font-size: 0.65rem;
         color: #888;
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: var(--brand-primary, #f82249);
+        background: rgba(248, 34, 73, 0.08);
+        padding: 5px 10px;
+        border-radius: 6px;
+        width: fit-content;
+    }
+    .role-badge i {
+        font-size: 0.95rem;
     }
 </style>
 
