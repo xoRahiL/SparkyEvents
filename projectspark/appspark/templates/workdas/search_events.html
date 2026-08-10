@@ -73,7 +73,16 @@
                     {{ event.address }}, {{ event.city }}, {{ event.state }}
                 </p>
 
-                <p class="card-text text-muted small mb-3">{{ event.description|truncatewords:14 }}</p>
+                <p class="card-text text-muted small mb-1 desc-short" id="desc-short-{{ event.id }}">
+                    {{ event.description|truncatewords:14 }}
+                    {% if event.description|wordcount > 14 %}
+                    <a href="#" class="read-more-link" onclick="toggleDesc({{ event.id }}); return false;">Read more</a>
+                    {% endif %}
+                </p>
+                <p class="card-text text-muted small mb-3 desc-full d-none" id="desc-full-{{ event.id }}">
+                    {{ event.description }}
+                    <a href="#" class="read-more-link" onclick="toggleDesc({{ event.id }}); return false;">Read less</a>
+                </p>
 
                 <div class="stat-row mb-3">
                     <div class="stat-chip">
@@ -248,6 +257,22 @@
     .role-badge i {
         font-size: 0.95rem;
     }
+    .read-more-link {
+        color: var(--brand-primary, #f82249);
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .read-more-link:hover {
+        text-decoration: underline;
+    }
 </style>
+
+<script>
+    function toggleDesc(eventId) {
+        document.getElementById('desc-short-' + eventId).classList.toggle('d-none');
+        document.getElementById('desc-full-' + eventId).classList.toggle('d-none');
+    }
+</script>
 
 {% endblock %}
