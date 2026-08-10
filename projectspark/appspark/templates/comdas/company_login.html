@@ -4,6 +4,7 @@
     {% load static %}
 
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login/Registration</title>
     <link rel="stylesheet" href="{% static 'logincss/style1.css' %}">
     <!-- bootstrap -->
@@ -14,21 +15,16 @@
     <link rel="stylesheet" href="{% static 'logincss/style.css' %}">
     <link href="{% static 'assets2/img/star.png' %}" rel="icon">
 </head>
-<body class="text-dark bg-dark">
+<body class="text-dark bg-dark" style="background-image: url('{% static 'assets/img/hero-bg.jpg' %}')">
 <div class="container">
     <div class="forms">
         <div class="form login">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-                <strong>Note: </strong> {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
+            {% include 'partials/messages.html' %}
             <span class="title">Login as Company</span>
-            <form action="/companylogin/" method="post" enctype="multipart/form-data">
+            <form action="{% url 'companylogin' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your username" name="username" required autofocus>
+                    <input type="text" placeholder="Enter your username or email" name="username" value="{{ login_form.username.value|default_if_none:'' }}" required autofocus>
                     <i class="uil uil-envelope icon"></i>
                 </div>
                 <div class="input-field">
@@ -36,7 +32,7 @@
                     <i class="uil uil-lock icon"></i>
                 </div>
                 <div class="checkbox-text">
-                    <a href="/companyforget/" class="text">Forgot password?</a>
+                    <a href="{% url 'companyforget' %}" class="text">Forgot password?</a>
                 </div>
                 <div class="input-field button">
                     <input type="submit" value="Login">
@@ -51,18 +47,21 @@
         <!-- Registration Form -->
         <div class="form signup">
             <span class="title">Registration as Company</span>
-            <form action="/companyregister/" method="post" enctype="multipart/form-data">
+            <form action="{% url 'companyregister' %}" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your Company" name="cname" required>
+                    <input type="text" placeholder="Enter your Company" name="cname" value="{{ register_form.cname.value|default_if_none:'' }}" required>
                     <i class="uil uil-user"></i>
                 </div>
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your username" name="username" required>
+                    <input type="text" placeholder="Enter your username" name="username" value="{{ register_form.username.value|default_if_none:'' }}" required>
                     <i class="uil uil-user"></i>
                 </div>
+                <small class="username-help d-block mt-1">
+                    Use 1–50 letters or numbers only—no spaces or symbols. Your username is used to identify and log in to your account; your company name is shown separately.
+                </small>
                 <div class="input-field">
-                    <input type="text" placeholder="Enter your email" name="email" required>
+                    <input type="email" placeholder="Enter your email" name="email" value="{{ register_form.email.value|default_if_none:'' }}" required>
                     <i class="uil uil-envelope icon"></i>
                 </div>
                 <div class="input-field">
@@ -74,7 +73,23 @@
                         <label class="form-label mt-3 " for="propic">Upload Company logo:</label>
                     </div>
                     <div class="col">
-                        <input type="file" name="propic" id="propic" class="form-control float-left" required>
+                        <input type="file" name="propic" id="propic" class="form-control float-left">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <label class="col-12 col-md-6 col-lg-5 col-form-label" for="state">State (optional):</label>
+                    <div class="col-12 col-md-6 col-lg-7">
+                        <select class="form-select" name="state" id="state" disabled>
+                            <option value="" selected>Loading states...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <label class="col-12 col-md-6 col-lg-5 col-form-label" for="city">City (optional):</label>
+                    <div class="col-12 col-md-6 col-lg-7">
+                        <select class="form-select" name="city" id="city" disabled>
+                            <option value="" selected>Select a state first</option>
+                        </select>
                     </div>
                 </div>
                 <div class="input-field button">
@@ -91,6 +106,12 @@
 </div>
 <!-- partial -->
 <script src="{% static 'logincss/script.js' %}"></script>
-<script src="{% static 'bootstrap/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'bootstrapjs/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/location-dropdowns.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initLocationDropdowns({ countryId: 'country', stateId: 'state', cityId: 'city' });
+    });
+</script>
 </body>
 </html>

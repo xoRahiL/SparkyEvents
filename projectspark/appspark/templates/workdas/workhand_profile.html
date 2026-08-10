@@ -7,12 +7,14 @@
     <h1>Profile</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
             <li class="breadcrumb-item active">Profile</li>
         </ol>
     </nav>
 </div>
 <!-- End Page Title -->
+
+{% include 'partials/messages.html' %}
 
 <section class="section profile">
     <div class="row">
@@ -55,9 +57,12 @@
 
                                 <div class="card">
                                     <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
-                                        <img src="{{wu.profile_pic.url}}" alt="Profile picture" class="rounded-circle"
-                                             onerror="this.src='{% static 'assets2/img/anonymouspic.png' %}'">
-                                        <h2 class="text-capitalize">{{w.user.first_name}} {{w.user.last_name}}</h2>
+                                        {% if wu.profile_pic.name == "assets2/img/AnonymousPic.png" %}
+                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile picture" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        {% else %}
+                                        <img src="{{wu.profile_pic.url}}" alt="Profile picture" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        {% endif %}
+                                        <h2 class="text-capitalize">{{wu.user.first_name}} {{wu.user.last_name}}</h2>
                                         <!-- <h3></h3> -->
                                         <!-- <div class="social-links mt-2"> -->
                                         <!-- <a href="#" class="twitter"><i class="bi bi-twitter"></i></a> -->
@@ -112,17 +117,21 @@
                         <div class="tab-pane fade profile-edit pt-3" id="profile-edit">
 
                             <!-- Profile Edit Form -->
-                            <form action="/workhandprofile/" method="post" enctype="multipart/form-data">
+                            <form action="{% url 'workhandprofile' %}" method="post" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <div class="row mb-3">
                                     <label for="profileImage" class="col-md-4 col-lg-3 col-form-label">Profile
                                         Image</label>
                                     <div class="col-md-8 col-lg-9" id="profileImage">
-                                        <img src="{{wu.profile_pic.url}}" alt="Profile">
+                                        {% if wu.profile_pic.name == "assets2/img/AnonymousPic.png" %}
+                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        {% else %}
+                                        <img src="{{wu.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        {% endif %}
                                         <div class="pt-2">
                                             <input type="file" class="form-control w-50"
                                                    title="Upload new profile image"
-                                                   name="propic" required>
+                                                   name="profile_pic">
                                             <!--                                            <a href="#" class="btn btn-danger btn-sm" title="Remove my profile image"><i-->
                                             <!--                                                    class="bi bi-trash"></i></a>-->
                                         </div>
@@ -175,15 +184,17 @@
                                 <div class="row mb-3">
                                     <label for="state" class="col-md-4 col-lg-3 col-form-label">State</label>
                                     <div class="col-md-8 col-lg-9">
-                                        <input name="state" type="text" class="form-control" id="state"
-                                               value="{{wu.state}}">
+                                        <select name="state" class="form-select" id="state" disabled data-initial="{{ wu.state }}">
+                                            <option value="" selected>Loading states...</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="row mb-3">
                                     <label for="city" class="col-md-4 col-lg-3 col-form-label">City</label>
                                     <div class="col-md-8 col-lg-9">
-                                        <input name="city" type="text" class="form-control" id="city"
-                                               value="{{wu.city}}">
+                                        <select name="city" class="form-select" id="city" disabled data-initial="{{ wu.city }}">
+                                            <option value="" selected>Select a state first</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -191,7 +202,7 @@
                                 <div class="row mb-3">
                                     <label class="col-md-4 col-lg-3 col-form-label">Choose Workhand Category:</label>
                                     <div class="col-md-8 col-lg-9">
-                                        <select class="form-select" aria-label="Default select example" name="category"
+                                        <select class="form-select" aria-label="Default select example" name="workhand_category"
                                                 required>
                                             <option selected value="">Select option</option>
                                             {% for c in cat %}
@@ -212,14 +223,15 @@
 
                     <div class="tab-pane fade pt-3" id="profile-change-password">
                         <!-- Change Password Form -->
-                        <form>
+                        <form action="{% url 'workhandchangepassword' %}" method="post">
+                            {% csrf_token %}
 
                             <div class="row mb-3">
                                 <label for="currentPassword" class="col-md-4 col-lg-3 col-form-label">Current
                                     Password</label>
                                 <div class="col-md-8 col-lg-9">
-                                    <input name="password" type="password" class="form-control"
-                                           id="currentPassword">
+                                    <input name="old_password" type="password" class="form-control"
+                                           id="currentPassword" required>
                                 </div>
                             </div>
 
@@ -227,7 +239,7 @@
                                 <label for="newPassword" class="col-md-4 col-lg-3 col-form-label">New
                                     Password</label>
                                 <div class="col-md-8 col-lg-9">
-                                    <input name="newpassword" type="password" class="form-control" id="newPassword">
+                                    <input name="new_password1" type="password" class="form-control" id="newPassword" required>
                                 </div>
                             </div>
 
@@ -235,8 +247,8 @@
                                 <label for="renewPassword" class="col-md-4 col-lg-3 col-form-label">Re-enter New
                                     Password</label>
                                 <div class="col-md-8 col-lg-9">
-                                    <input name="renewpassword" type="password" class="form-control"
-                                           id="renewPassword">
+                                    <input name="new_password2" type="password" class="form-control"
+                                           id="renewPassword" required>
                                 </div>
                             </div>
 
@@ -254,4 +266,23 @@
 
     </div>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.hash) {
+        var trigger = document.querySelector('[data-bs-target="' + window.location.hash + '"]');
+        if (trigger) {
+            new bootstrap.Tab(trigger).show();
+        }
+    }
+});
+</script>
+
+<script src="{% static 'js/location-dropdowns.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        initLocationDropdowns({ countryId: 'country', stateId: 'state', cityId: 'city' });
+    });
+</script>
+
 {% endblock %}

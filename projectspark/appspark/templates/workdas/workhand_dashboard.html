@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    {% load static %}
+    {% load static humanize %}
     <meta charset="utf-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
@@ -14,7 +14,6 @@
     <link href="{% static 'assets2/img/star.png' %}" rel="icon">
 
     <!--    <link href="{% static 'assets2/img/img.png' %}" rel="icon">-->
-    <!--    <link href="{% static 'assets2/img/apple-touch-icon.png' %}" rel="apple-touch-icon">-->
 
     <!-- Google Fonts -->
     <link href="https://fonts.gstatic.com" rel="preconnect">
@@ -23,25 +22,47 @@
             rel="stylesheet">
 
     <!-- Vendor CSS Files -->
-    <link href="{% static 'assets2/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'bootstrapcss/bootstrap.min.css' %}" rel="stylesheet">
     <link href="{% static 'assets2/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/quill/quill.snow.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/quill/quill.bubble.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/remixicon/remixicon.css' %}" rel="stylesheet">
-    <link href="{% static 'assets2/vendor/simple-datatables/style.css' %}" rel="stylesheet">
 
     <!-- Template Main CSS File -->
     <link href="{% static 'assets2/css/newstyle.css' %}" rel="stylesheet">
 
-    <!-- =======================================================
-    * Template Name: NiceAdmin
-    * Updated: Jan 29 2024 with Bootstrap v5.3.2
-    * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/
-    * Author: BootstrapMade.com
-    * License: https://bootstrapmade.com/license/
-    ======================================================== -->
-</head>
+    <!-- Brand theme override: matches the landing/login page brand color. -->
+    <link href="{% static 'assets2/css/brand-theme.css' %}" rel="stylesheet">
+
+    <!-- Sticky footer fix: keeps the footer pinned to the bottom of the
+         viewport on pages with little content. -->
+    <style>
+        html, body { height: 100%; }
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        #main { flex: 1 0 auto; }
+        #footer { flex-shrink: 0; }
+
+        .mini-event-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 4px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .mini-event-row:last-child { border-bottom: none; }
+        .mini-event-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--brand-primary, #f82249);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        .min-w-0 { min-width: 0; }
+    </style>
+
+    </head>
 
 <body>
 
@@ -64,11 +85,12 @@
             <li class="nav-item dropdown pe-3">
 
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-                    <!--                    <img src="{{w.profile_pic.url}}" alt="Profile" class="rounded-circle">-->
-                    <!--                    <img src="{% static 'assets2/img/anonymouspic.png' %}" alt="Profile" class="rounded-circle">-->
-                    <img src="{{wu.profile_pic.url}}" alt="Profile" class="rounded-circle"
-                         onerror="this.src='{% static 'assets2/img/anonymouspic.png' %}'">
-                    <span class="d-none d-md-block dropdown-toggle ps-2" style="text-transform:capitalize; ">Hello, {{user.first_name}}</span>
+                    {% if wu.profile_pic.name == "assets2/img/AnonymousPic.png" %}
+                    <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; display: block;">
+                    {% else %}
+                    <img src="{{wu.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; display: block;">
+                    {% endif %}
+                    <span class="d-none d-md-block dropdown-toggle ps-2" style="text-transform:capitalize; ">Hello, {{ user.username }}</span>
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
@@ -81,7 +103,7 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="/workhandprofile/">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'workhandprofile' %}">
                             <i class="bi bi-person"></i>
                             <span>My Profile</span>
                         </a>
@@ -91,7 +113,7 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="/workhandlogout/">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'workhandlogout' %}">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Log Out</span>
                         </a>
@@ -113,7 +135,7 @@
         <li class="nav-heading">Your Details</li>
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/workhandprofile/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'workhandprofile' %}collapsed{% endif %}" href="{% url 'workhandprofile' %}">
                 <i class="bi bi-person"></i>
                 <span>Profile</span>
             </a>
@@ -122,25 +144,28 @@
         <li class="nav-heading">Work</li>
 
         <li class="nav-item">
-            <a class="nav-link " href="/workhanddashboard/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'workhanddashboard' %}collapsed{% endif %}" href="{% url 'workhanddashboard' %}">
                 <i class="bi bi-grid"></i>
                 <span>Dashboard</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/searchevents/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'searchevents' %}collapsed{% endif %}" href="{% url 'searchevents' %}">
                 <i class="bi bi-journal-text"></i>
                 <span>Search Events</span>
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/approved/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'approved' %}collapsed{% endif %}" href="{% url 'approved' %}">
                 <i class="bi bi-check2-square"></i>
                 <span>Approved Applications</span>
+                {% if approved_applications_count %}
+                <span class="badge bg-danger rounded-pill ms-2">{{ approved_applications_count }}</span>
+                {% endif %}
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link collapsed" href="/workhandeventhistory/">
+            <a class="nav-link {% if request.resolver_match.url_name != 'workhandeventhistory' %}collapsed{% endif %}" href="{% url 'workhandeventhistory' %}">
                 <i class="bi bi-card-list"></i>
                 <span>History</span>
             </a>
@@ -152,18 +177,13 @@
 </aside><!-- End Sidebar-->
 <main id="main" class="main">
     {% block content %}
-    {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-        <strong>Note: </strong> {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-    {% endfor %}
+    {% include 'partials/messages.html' %}
 
     <div class="pagetitle">
         <h1>Dashboard</h1>
         <nav>
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
                 <li class="breadcrumb-item active">Dashboard</li>
             </ol>
         </nav>
@@ -175,93 +195,150 @@
                 <div class="row">
 
                     <!-- Total Event Applied Card -->
-                    <div class="col-xxl-4 col-md-6">
+                    <div class="col-xxl-3 col-md-6">
                         <div class="card info-card sales-card">
-
-                            <div class="filter">
-                            </div>
-
                             <div class="card-body">
-                                <h5 class="card-title">Total Events <span>Applied </span></h5>
-
+                                <h5 class="card-title">Total Events <span>Applied</span></h5>
                                 <div class="d-flex align-items-center">
                                     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
                                         <i class="bi bi-journal-text"></i>
                                     </div>
                                     <div class="ps-3">
-                                        <h6>{{ ap|length }}</h6>
+                                        <h1 class="stat-count" data-target="{{ ap|length }}">0</h1>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                     <!-- End Total Event Applied Card -->
 
                     <!-- Total Events Completed Card -->
-                    <div class="col-xxl-4 col-md-6">
+                    <div class="col-xxl-3 col-md-6">
                         <div class="card info-card revenue-card">
-
                             <div class="card-body">
                                 <h5 class="card-title">Total Events <span>Completed</span></h5>
-
                                 <div class="d-flex align-items-center">
                                     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                                        <i class="bi bi-currency-rupee"></i>
+                                        <i class="bi bi-check2"></i>
                                     </div>
                                     <div class="ps-3">
-                                        <h6>{{ eh|length }}</h6>
+                                        <h1 class="stat-count" data-target="{{ eh|length }}">0</h1>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                     <!-- End Total Events Completed Card -->
 
-                    <!-- Events Posted -->
-                    <div class="col-xxl">
-                        <div class="card recent-sales overflow-auto">
+                    <!-- Pending Applications Card -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card">
                             <div class="card-body">
-                                <h5 class="card-title">Events Completed <span>| Recent</span></h5>
-                                <table class="table table-borderless datatable">
-                                    <thead>
-                                    <tr>
-                                        <th scope="col">Sno</th>
-                                        <th scope="col">Company name</th>
-                                        <th scope="col">Event Name</th>
-                                        <th scope="col">Event Category</th>
-                                        <th scope="col">Description</th>
-                                        <th scope="col">Start Date</th>
-                                        <th scope="col">End Date</th>
-                                        <th scope="col">Address</th>
-                                        <th scope="col">State</th>
-                                        <th scope="col">City</th>
-                                        <th scope="col">Payment</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for eh in eh %}
-                                    <tr>
-                                        <td scope="col">{{forloop.counter}}</td>
-                                        <td scope="col">{{eh.company_id.user.first_name}}</td>
-                                        <td scope="col">{{eh.event_name}}</td>
-                                        <td scope="col">{{eh.event_category}}</td>
-                                        <td scope="col">{{eh.description}}</td>
-                                        <td scope="col">{{eh.start_date}}</td>
-                                        <td scope="col">{{eh.end_date}}</td>
-                                        <td scope="col">{{eh.address}}</td>
-                                        <td scope="col">{{eh.state}}</td>
-                                        <td scope="col">{{eh.city}}</td>
-                                        <td scope="col">{{eh.payment_range}}</td>
-                                    </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+                                <h5 class="card-title">Pending <span>Approval</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="background: #fff3e0;">
+                                        <i class="bi bi-hourglass-split" style="color: #ff9800;"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h1 class="stat-count" data-target="{{ pending_count }}">0</h1>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <!-- End Events Posted -->
+                    <!-- End Pending Applications Card -->
+
+                    <!-- Total Earnings Card -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Total <span>Earnings</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center" style="background: #e8f5e9;">
+                                        <i class="bi bi-cash-stack" style="color: #4caf50;"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h1>&#8377;<span class="stat-count" data-target="{{ total_earnings|floatformat:0 }}">0</span></h1>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Total Earnings Card -->
+
+                </div>
+
+                <div class="row">
+                    <!-- Upcoming Gigs -->
+                    <div class="col-lg-6">
+                        <div class="card recent-sales overflow-auto">
+                            <div class="card-body">
+                                <h5 class="card-title">Upcoming <span>Gigs</span></h5>
+
+                                {% if upcoming_gigs %}
+                                <div class="mt-3">
+                                    {% for gig in upcoming_gigs %}
+                                    <div class="mini-event-row">
+                                        <div class="mini-event-icon">
+                                            <i class="bi {{ gig.event.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-semibold text-truncate">{{ gig.event.event_name }}</div>
+                                            <div class="text-muted small">{{ gig.to_company.user.first_name }} &middot; Starts in {{ gig.event.start_date|timeuntil }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-calendar-check" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                                    <p class="text-muted mt-3 mb-0">No upcoming gigs right now.</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Upcoming Gigs -->
+
+                    <!-- Events Completed -->
+                    <div class="col-lg-6">
+                        <div class="card recent-sales overflow-auto">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <h5 class="card-title mb-0">Events Completed <span>| Recent</span></h5>
+                                    <a href="{% url 'workhandeventhistory' %}" class="small">View all &rarr;</a>
+                                </div>
+
+                                {% if eh %}
+                                <div class="mt-3">
+                                    {% for record in eh %}
+                                    <div class="mini-event-row">
+                                        <div class="mini-event-icon">
+                                            <i class="bi {{ record.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                                        </div>
+                                        <div class="flex-grow-1 min-w-0">
+                                            <div class="fw-semibold text-truncate">{{ record.event_name }}</div>
+                                            <div class="text-muted small">{{ record.company_id.user.first_name }} &middot; {{ record.city }}, {{ record.state }}</div>
+                                        </div>
+                                        <div class="text-end flex-shrink-0">
+                                            <div class="small fw-semibold">₹{{ record.payment_range|floatformat:0|intcomma }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-briefcase" style="font-size: 2.5rem; opacity: 0.4;"></i>
+                                    <p class="text-muted mt-3 mb-3">No completed events yet.</p>
+                                    <a href="{% url 'searchevents' %}" class="btn btn-primary">
+                                        <i class="bi bi-search"></i> Find Events to Apply
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Events Completed -->
                 </div>
             </div>
         </div>
@@ -276,25 +353,46 @@
     <div class="copyright">
         &copy; Copyright <strong><span>SparkyEvents</span></strong>.<br> All Rights Reserved
     </div>
-    <div class="credits">
-        <!-- All the links in the footer should remain intact. -->
-        <!-- You can delete the links only if you purchased the pro version. -->
-        <!-- Licensing information: https://bootstrapmade.com/license/ -->
-        <!-- Purchase the pro version with working PHP/AJAX contact form: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/ -->
-    </div>
+    <div class="credits">    </div>
 </footer><!-- End Footer -->
 
 <a href="#" class="back-to-top d-flex align-items-center justify-content-center">
     <i class="bi bi-arrow-up-short"></i></a>
 
 <!-- Vendor JS Files -->
-<script src="{% static 'assets2/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'assets2/vendor/quill/quill.min.js' %}"></script>
-<script src="{% static 'assets2/vendor/simple-datatables/simple-datatables.js' %}"></script>
-<script src="{% static 'assets2/vendor/tinymce/tinymce.min.js' %}"></script>
+<script src="{% static 'bootstrapjs/bootstrap.bundle.min.js' %}"></script>
 
 <!-- Template Main JS File -->
 <script src="{% static 'assets2/js/main.js' %}"></script>
+
+<!-- Count-up animation for dashboard stats -->
+<script>
+function formatWithCommas(num) {
+    // Manual comma insertion instead of toLocaleString(), so this never
+    // depends on a browser correctly supporting the 'en-IN' locale.
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.stat-count').forEach(function (el) {
+        var target = parseInt(el.getAttribute('data-target'), 10) || 0;
+        var duration = 800;
+        var startTime = null;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            var progress = Math.min((timestamp - startTime) / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = formatWithCommas(Math.floor(eased * target));
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                el.textContent = formatWithCommas(target);
+            }
+        }
+        requestAnimationFrame(step);
+    });
+});
+</script>
 
 </body>
 

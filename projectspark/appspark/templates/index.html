@@ -22,8 +22,8 @@
                 <li><a class="nav-link scrollto" href="#contact">Contact</a></li>
                 <li class="dropdown"><a href="#"><span class="buy-tickets">Login | Register</span></a>
                     <ul>
-                        <li><a href="/workhandlogin/">WORKHAND</a></li>
-                        <li><a href="/companylogin/">COMPANY</a></li>
+                        <li><a href="{% url 'workhandlogin' %}">Looking for Work?</a></li>
+                        <li><a href="{% url 'companylogin' %}">Get Your Event Organised</a></li>
                     </ul>
                 </li>
             </ul>
@@ -39,12 +39,7 @@
 <!-- ======= Hero Section ======= -->
 <section id="hero">
     <div class="container-fluid alert1 mt-5 pt-5">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-            <strong>Note: </strong> {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
+        {% include 'partials/messages.html' %}
     </div>
     <div class="hero-container" data-aos="zoom-in" data-aos-delay="100">
         <h1 class="mb-4 pb-0"><span>Sparky</span> Events</h1>

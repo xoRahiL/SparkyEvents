@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email</title>
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <link rel="stylesheet" href="{% static 'bootstrapcss/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'logincss/style.css' %}">
+    <style>
+        body.otp-page { padding: 16px; }
+        .otp-card { width: min(100%, 520px); margin: 0 auto; }
+        .otp-card .forms { width: 100%; height: auto; }
+        .otp-card .form { width: 100%; padding: clamp(22px, 6vw, 38px); }
+        .otp-card .otp-input { position: relative; padding: 0 42px 0 12px; letter-spacing: 0.45em; text-align: center; }
+        .otp-card .otp-input::placeholder { letter-spacing: normal; }
+        .otp-card .verify-button { width: 100%; }
+        @media (max-width: 480px) {
+            body.otp-page { padding: 10px; }
+            .otp-card .form .title { font-size: 22px; }
+            .otp-card .otp-input { font-size: 1rem !important; letter-spacing: 0.3em; }
+            .otp-card .resend-button { padding-inline: 0; font-size: .9rem; }
+        }
+    </style>
+</head>
+<body style="background-image: url('{% static 'assets/img/hero-bg.jpg' %}')" class="otp-page text-dark bg-dark">
+
+{% include 'partials/messages.html' %}
+
+<div class="container otp-card">
+    <div class="forms">
+        <div class="form login">
+            <span class="title">Verify Your Email</span>
+            <p class="text-center text-muted small mb-4">
+                We sent a 6-digit code to <strong>{{ email }}</strong>. It expires in 15 minutes.
+            </p>
+
+            <form action="{% url 'verifyworkhandotp' %}" method="post">
+                {% csrf_token %}
+                <div class="input-field">
+                    <input class="otp-input" type="text" name="otp" placeholder="Enter 6-digit code" maxlength="6"
+                           inputmode="numeric" pattern="[0-9]{6}" required autofocus
+                           style="letter-spacing: 6px; text-align: center; font-size: 1.2rem;">
+                    <i class="uil uil-shield-check icon"></i>
+                </div>
+                <div class="input-field button">
+                    <input class="verify-button" type="submit" value="Verify">
+                </div>
+            </form>
+
+            <form action="{% url 'resendworkhandotp' %}" method="post" class="text-center mt-2">
+                {% csrf_token %}
+                <button type="submit" class="resend-button btn btn-link text-decoration-none">Didn't get it? Resend code</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,74 +1,278 @@
 {% extends 'workdas/workhand_dashboard.html' %}
-{% load static %}
+{% load static humanize %}
 
-{%  block content %}
+{% block content %}
 
-{% for message in messages %}
-<div class="alert alert-{{ message.tags }} alert-warning alert-dismissible fade show" role="alert">
-    <strong>Note: </strong> {{ message }}
-    <a class="btn btn-primary ms-3" href="/approved/">Go to Applications</a>
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
-{% endfor %}
+{% include 'partials/messages.html' %}
 
 <div class="pagetitle">
     <h1>Search Events</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href=/workhanddashboard/"">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
             <li class="breadcrumb-item active">Search Events</li>
         </ol>
     </nav>
 </div>
 
-<!-- Search Events -->
-<div class="col-xxl">
-    <div class="card recent-sales overflow-auto">
-        <div class="card-body">
-            <h5 class="card-title">Available Jobs ! <span>| Events</span></h5>
-            <table class="table table-borderless datatable">
-                <thead>
-                <tr>
-                    <th scope="col">Sno</th>
-                    <th scope="col">Company Name</th>
-                    <th scope="col">Event Name</th>
-                    <th scope="col">Event Category</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Date</th>
-                    <th scope="col">Budget</th>
-                    <th scope="col">State</th>
-                    <th scope="col">City</th>
-                    <th scope="col">Apply</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for e in events %}
-                <tr>
-                    <td scope="col">{{forloop.counter}}</td>
-                    <td scope="col">{{e.company_id.user.first_name}}</td>
-                    <td scope="col">{{e.event_name}}</td>
-                    <td scope="col">{{e.event_category}}</td>
-                    <td scope="col">{{e.description}}</td>
-                    <td scope="col">{{e.start_date}}</td>
-                    <td scope="col">{{e.payment_range}}</td>
-                    <td scope="col">{{e.state}}</td>
-                    <td scope="col">{{e.city}}</td>
-                    <td scope="col">
-                        <form method="post" action="/applyforevent/{{e.id}}/">
-                            {% csrf_token %}
-                            <input type="hidden" name="workhand" value="{{wu.id}}">
-                            <input type="hidden" name="workhand" value="{{e.id}}">
-                            <input type="hidden" name="workhand" value="{{e.company_id.id}}">
-                            <button type="submit" class="btn btn-success">Apply</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
+<div class="card mb-4 filter-bar">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Category</label>
+                <select name="category" class="form-select" onchange="this.form.submit()">
+                    <option value="">All categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">City</label>
+                <input type="text" name="city" class="form-control" placeholder="e.g. Ahmedabad, then press Enter" value="{{ selected_city }}">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                {% if selected_category or selected_city %}
+                <a href="{% url 'searchevents' %}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+            </div>
+        </form>
     </div>
 </div>
-<!-- End Search Events -->
+
+{% if page_obj %}
+<div class="text-muted small mb-3">{{ page_obj.paginator.count }} event{{ page_obj.paginator.count|pluralize }} found</div>
+
+<div class="row g-4">
+    {% for event in page_obj %}
+    <div class="col-md-6">
+        <div class="card h-100 event-card">
+            <div class="event-banner">
+                <i class="bi {{ event.category_icon }}"></i>
+                <img class="company-avatar" src="{{ event.company_id.profile_pic.url }}" alt="{{ event.company_id.user.first_name }}" onerror="this.onerror=null;this.outerHTML='<div class=&quot;company-avatar&quot;>{{ event.company_id.user.first_name|first|upper }}</div>';">
+            </div>
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                    <span class="text-muted small">{{ event.company_id.user.first_name }} &middot; {{ event.city }}</span>
+                    <span class="badge bg-light text-dark border">{{ event.event_category }}</span>
+                </div>
+
+                <h5 class="card-title mb-2">{{ event.event_name }}</h5>
+
+                {% if event.workhand_category %}
+                <div class="role-badge mb-2">
+                    <i class="bi bi-briefcase"></i> Hiring for: <strong>{{ event.workhand_category }}</strong>
+                </div>
+                {% endif %}
+
+                <p class="card-text text-muted small mb-2">
+                    <i class="bi bi-geo-alt"></i>
+                    {{ event.address }}, {{ event.city }}, {{ event.state }}
+                </p>
+
+                <p class="card-text text-muted small mb-1 desc-short" id="desc-short-{{ event.id }}">
+                    {{ event.description|truncatewords:14 }}
+                    {% if event.description|wordcount > 14 %}
+                    <a href="#" class="read-more-link" onclick="toggleDesc({{ event.id }}); return false;">Read more</a>
+                    {% endif %}
+                </p>
+                <p class="card-text text-muted small mb-3 desc-full d-none" id="desc-full-{{ event.id }}">
+                    {{ event.description }}
+                    <a href="#" class="read-more-link" onclick="toggleDesc({{ event.id }}); return false;">Read less</a>
+                </p>
+
+                <div class="stat-row mb-3">
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="stat-value">₹{{ event.payment_range|floatformat:0|intcomma }}</div>
+                            <div class="stat-label">Budget</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-people"></i>
+                        <div>
+                            <div class="stat-value">{{ event.workhand_needed }}</div>
+                            <div class="stat-label">Needed</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-hourglass-split"></i>
+                        <div>
+                            <div class="stat-value">{{ event.start_date|timeuntil }}</div>
+                            <div class="stat-label">Starts in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-calendar-event"></i>
+                    {{ event.start_date|date:"d M Y" }} &rarr; {{ event.end_date|date:"d M Y" }}
+                </div>
+
+                {% if event.id in applied_event_ids %}
+                <button type="button" class="btn btn-secondary w-100 mt-auto" disabled>
+                    <i class="bi bi-check2"></i> Applied
+                </button>
+                {% else %}
+                <form method="post" action="{% url 'applyforevent' event.id %}" class="mt-auto">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success w-100">
+                        Apply Now <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_city %}&city={{ selected_city }}{% endif %}">Previous</a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_city %}&city={{ selected_city }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if selected_city %}&city={{ selected_city }}{% endif %}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-search" style="font-size: 2.5rem; opacity: 0.4;"></i>
+    <p class="text-muted mt-3 mb-0">No events match your filters. Try broadening your search.</p>
+</div>
+{% endif %}
+
+<style>
+    .filter-bar {
+        border: none;
+        border-radius: 12px;
+        background: #fafafa;
+    }
+    .event-card {
+        border: 1px solid #eee;
+        border-radius: 14px;
+        overflow: hidden;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .event-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.1);
+    }
+    .event-banner {
+        position: relative;
+        height: 90px;
+        background: linear-gradient(135deg, var(--brand-primary, #f82249), var(--brand-primary-dark, #e0072f));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .event-banner i {
+        font-size: 2.75rem;
+        color: rgba(255,255,255,0.9);
+    }
+    .company-avatar {
+        position: absolute;
+        bottom: -18px;
+        left: 16px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--brand-primary, #f82249);
+        border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        object-fit: cover;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+    .card-body {
+        padding-top: 1.75rem;
+    }
+    .stat-row {
+        display: flex;
+        gap: 8px;
+    }
+    .stat-chip {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 8px 6px;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .stat-chip > div {
+        min-width: 0;
+        overflow: hidden;
+    }
+    .stat-chip i {
+        color: var(--brand-primary, #f82249);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+    }
+    .stat-value {
+        font-size: 0.8rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+    .stat-label {
+        font-size: 0.65rem;
+        color: #888;
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: var(--brand-primary, #f82249);
+        background: rgba(248, 34, 73, 0.08);
+        padding: 5px 10px;
+        border-radius: 6px;
+        width: fit-content;
+    }
+    .role-badge i {
+        font-size: 0.95rem;
+    }
+    .read-more-link {
+        color: var(--brand-primary, #f82249);
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+    .read-more-link:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<script>
+    function toggleDesc(eventId) {
+        document.getElementById('desc-short-' + eventId).classList.toggle('d-none');
+        document.getElementById('desc-full-' + eventId).classList.toggle('d-none');
+    }
+</script>
 
 {% endblock %}
