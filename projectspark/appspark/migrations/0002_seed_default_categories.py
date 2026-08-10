@@ -26,8 +26,6 @@ def seed_categories(apps, schema_editor):
 
 
 def remove_categories(apps, schema_editor):
-    # Reverse migration: only removes the exact seeded names, leaves any
-    # custom categories you added yourself untouched.
     WorkhandCategory = apps.get_model('appspark', 'WorkhandCategory')
     EventsCategory = apps.get_model('appspark', 'EventsCategory')
 
@@ -38,7 +36,7 @@ def remove_categories(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('appspark', '0026_workhandapplications_unique_application_per_event'),
+        ('appspark', '0001_initial'),
     ]
 
     operations = [
