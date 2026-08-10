@@ -83,24 +83,25 @@ WSGI_APPLICATION = 'projectspark.wsgi.application'
 if env('DATABASE_URL', default=None):
     # Render provides DATABASE_URL in this format:
     # postgresql://user:password@host:port/dbname
-    import re
+    # Note: Render's Internal Database URL omits the port (defaults to 5432),
+    # so we use urlsplit instead of a strict regex that requires one.
+    from urllib.parse import urlsplit
     db_url = env('DATABASE_URL')
-    match = re.match(r'(\w+)://([^:]+):([^@]+)@([^:/]+):(\d+)/(.+)', db_url)
-    if match:
-        engine, user, password, host, port, name = match.groups()
-        DATABASES = {
-            'default': {
-                'ENGINE': f'django.db.backends.{engine}',
-                'NAME': name,
-                'USER': user,
-                'PASSWORD': password,
-                'HOST': host,
-                'PORT': int(port),
-                'CONN_MAX_AGE': 60,
-            }
-        }
-    else:
+    parsed = urlsplit(db_url)
+    if not (parsed.scheme and parsed.hostname and parsed.path.lstrip('/')):
         raise ValueError(f"Invalid DATABASE_URL format: {db_url}")
+    engine = 'postgresql' if parsed.scheme in ('postgres', 'postgresql') else parsed.scheme
+    DATABASES = {
+        'default': {
+            'ENGINE': f'django.db.backends.{engine}',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': parsed.username,
+            'PASSWORD': parsed.password,
+            'HOST': parsed.hostname,
+            'PORT': parsed.port or 5432,
+            'CONN_MAX_AGE': 60,
+        }
+    }
 elif env('DB_ENGINE', default='sqlite') == 'postgresql':
     DATABASES = {
         'default': {
