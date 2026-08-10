@@ -166,14 +166,24 @@ def generate_otp():
 
 
 def authenticate_role_user(identifier, password, role_model):
-    """Authenticate by username or email, then enforce the account role."""
+    """Authenticate by username or email, then enforce the account role.
+
+    Returns a tuple: (user_or_None, wrong_role_flag).
+    wrong_role_flag is True when the credentials are correct but the
+    account belongs to the other role (e.g. a workhand trying to log
+    in on the company login page).
+    """
     identifier = identifier.strip()
     user = (User.objects
             .filter(Q(username__iexact=identifier) | Q(email__iexact=identifier), is_active=True)
             .first())
-    if user and user.check_password(password) and role_model.objects.filter(user=user).exists():
-        return user
-    return None
+
+    if user and user.check_password(password):
+        if role_model.objects.filter(user=user).exists():
+            return user, False
+        return None, True
+
+    return None, False
 
 
 def index(request):
@@ -290,7 +300,7 @@ def workhand_login(request):
             identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            myuser = authenticate_role_user(identifier, password, Workhand)
+            myuser, wrong_role = authenticate_role_user(identifier, password, Workhand)
             if myuser is not None:
                 login(request, myuser)
                 messages.success(request, "Successfully logged in!")
@@ -299,7 +309,14 @@ def workhand_login(request):
                 )
                 return redirect('workhanddashboard')
 
-            messages.error(request, 'Invalid username or password!')
+            if wrong_role:
+                messages.error(
+                    request,
+                    "Those credentials belong to a Company account. "
+                    "Please use the Company login page instead."
+                )
+            else:
+                messages.error(request, 'Invalid username or password!')
 
     return render(request, 'workdas/workhand_login.html', {'cat': cat, 'login_form': login_form})
 
@@ -596,7 +613,7 @@ def company_login(request):
             identifier = login_form.cleaned_data['username'].strip()
             password = login_form.cleaned_data['password']
 
-            myuser = authenticate_role_user(identifier, password, Company)
+            myuser, wrong_role = authenticate_role_user(identifier, password, Company)
             if myuser is not None:
                 login(request, myuser)
                 messages.success(request, "Login successful!")
@@ -605,7 +622,14 @@ def company_login(request):
                 )
                 return redirect('companydashboard')
 
-            messages.error(request, 'Invalid username or password!')
+            if wrong_role:
+                messages.error(
+                    request,
+                    "Those credentials belong to a Workhand account. "
+                    "Please use the Workhand login page instead."
+                )
+            else:
+                messages.error(request, 'Invalid username or password!')
 
     return render(request, 'comdas/company_login.html', {'login_form': login_form})
 
