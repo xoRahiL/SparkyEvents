@@ -19,7 +19,12 @@ environ.Env.read_env(BASE_DIR / '.env')
 # --- Core security settings, all from environment ---
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
+# Around line 22 under core security settings:
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '*.onrender.com'])
+CSRF_TRUSTED_ORIGINS = env.list(
+    'CSRF_TRUSTED_ORIGINS',
+    default=['https://*.onrender.com', 'https://*.render.com']
+)
 
 # --- Email, no longer hardcoded ---
 EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
@@ -220,6 +225,7 @@ if IS_PRODUCTION:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # --- Celery, background task queue (uses Redis as the message broker) ---
 # On free hosting tiers (Render, etc.) there's usually no way to run a

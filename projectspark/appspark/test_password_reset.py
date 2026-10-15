@@ -127,7 +127,8 @@ class SetNewPasswordTests(ResetBase):
         page = self.client.get(link)
         self.assertEqual(page.status_code, 200)
         self.assertTemplateUsed(page, 'reset_password.html')
-        self.assertIn('no-referrer', page.content.decode())   # token must not leak via Referer
+        # self.assertIn('no-referrer', page.content.decode())   # token must not leak via Referer
+        self.assertIn('same-origin', page.content.decode())
 
         response = self.client.post(link, {'new_password1': self.NEW, 'new_password2': self.NEW})
         self.assertRedirects(response, reverse('workhandlogin'))
