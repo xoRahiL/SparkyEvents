@@ -124,6 +124,7 @@ elif env('DB_ENGINE', default='sqlite') == 'mysql':
             'HOST': env('DB_HOST', default='localhost'),
             'PORT': env('DB_PORT', default='3306'),
             'CONN_MAX_AGE': 60,
+            'OPTIONS': {'sslmode': 'require'},
         }
     }
 else:
