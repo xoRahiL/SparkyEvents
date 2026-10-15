@@ -8,8 +8,10 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth.models import User
+from django.core import signing
+from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
@@ -163,6 +165,111 @@ OTP_RESEND_COOLDOWN_SECONDS = 60
 
 def generate_otp():
     return str(random.randint(100000, 999999))
+
+
+# ---------------------------------------------------------------------------
+# Password reset by email link.
+# The link carries a signed, time-limited token. It also embeds the tail of the
+# user's current password hash, so it stops working the moment the password
+# changes - every link can be used exactly once.
+# ---------------------------------------------------------------------------
+PASSWORD_RESET_MAX_AGE_SECONDS = 60 * 60
+PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS = 60
+_PASSWORD_RESET_SALT = 'appspark.password-reset'
+
+
+def make_reset_token(user, role):
+    return signing.dumps(
+        {'u': user.pk, 'r': role, 'p': user.password[-12:]},
+        salt=_PASSWORD_RESET_SALT,
+    )
+
+
+def read_reset_token(token, role):
+    """Return the User this token belongs to, or None if it is invalid/expired/used."""
+    try:
+        data = signing.loads(token, salt=_PASSWORD_RESET_SALT, max_age=PASSWORD_RESET_MAX_AGE_SECONDS)
+    except signing.BadSignature:  # also covers SignatureExpired
+        return None
+    user = User.objects.filter(pk=data.get('u'), is_active=True).first()
+    if user is None or data.get('r') != role or user.password[-12:] != data.get('p'):
+        return None
+    return user
+
+
+def password_reset_message(name, link):
+    return (
+        f"Hi {name},\n\n"
+        f"We received a request to reset your SparkyEvents password. "
+        f"Use the link below to choose a new one:\n\n"
+        f"{link}\n\n"
+        f"This link expires in {PASSWORD_RESET_MAX_AGE_SECONDS // 60} minutes and can only be used once. "
+        f"If you didn't ask for this, you can safely ignore this email \u2014 your password won't change.\n\n"
+        f"Warm regards,\n"
+        f"The SparkyEvents Team"
+    )
+
+
+def password_changed_message(name):
+    return (
+        f"Hi {name},\n\n"
+        f"The password on your SparkyEvents account was just changed.\n\n"
+        f"If this was you, there's nothing else to do. If it wasn't, reset your "
+        f"password right away using the \"Forgot password?\" link on the login page "
+        f"and consider who else may have access to your email.\n\n"
+        f"Stay safe,\n"
+        f"The SparkyEvents Team"
+    )
+
+
+def _request_password_reset(request, *, role, role_model, template, login_url_name, reset_url_name):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip()
+        if email:
+            candidates = User.objects.filter(email__iexact=email, is_active=True)
+            user = next((u for u in candidates if role_model.objects.filter(user=u).exists()), None)
+            # One request per address per minute, so this form can't be used to spam someone's inbox.
+            if user and cache.add(f'pwreset:{role}:{email.lower()}', 1, PASSWORD_RESET_REQUEST_COOLDOWN_SECONDS):
+                link = request.build_absolute_uri(reverse(reset_url_name, args=[make_reset_token(user, role)]))
+                if settings.IS_PRODUCTION and link.startswith('http://'):
+                    link = 'https://' + link[len('http://'):]
+                send_notification_email(
+                    "Reset your SparkyEvents password",
+                    password_reset_message(user.first_name or user.username, link),
+                    user.email,
+                )
+        # Same answer whether or not the address is registered, so the form
+        # can't be used to find out who has an account.
+        messages.success(
+            request,
+            "If that email belongs to an account, we've sent a password reset link. "
+            f"It expires in {PASSWORD_RESET_MAX_AGE_SECONDS // 60} minutes.",
+        )
+        return redirect(login_url_name)
+    return render(request, template)
+
+
+def _reset_password(request, token, *, role, forget_url_name, login_url_name):
+    user = read_reset_token(token, role)
+    if user is None:
+        messages.error(request, "That reset link is invalid or has expired. Please request a new one.")
+        return redirect(forget_url_name)
+
+    form = SetPasswordForm(user, request.POST or None)
+    if request.method == 'POST':
+        if form.is_valid():
+            form.save()
+            send_notification_email(
+                "Your SparkyEvents password was changed",
+                password_changed_message(user.first_name or user.username),
+                user.email,
+            )
+            messages.success(request, "Password updated. Please log in with your new password.")
+            return redirect(login_url_name)
+        for field_errors in form.errors.values():
+            for error in field_errors:
+                messages.error(request, error)
+    return render(request, 'reset_password.html', {'login_url_name': login_url_name})
 
 
 def authenticate_role_user(identifier, password, role_model):
@@ -322,7 +429,16 @@ def workhand_login(request):
 
 
 def workhand_forget(request):
-    return render(request, 'workdas/workhand_forget.html')
+    return _request_password_reset(
+        request, role='workhand', role_model=Workhand, template='workdas/workhand_forget.html',
+        login_url_name='workhandlogin', reset_url_name='workhandreset',
+    )
+
+
+def workhand_reset(request, token):
+    return _reset_password(
+        request, token, role='workhand', forget_url_name='workhandforget', login_url_name='workhandlogin',
+    )
 
 
 @workhand_required
@@ -389,6 +505,11 @@ def workhand_change_password(request):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)
+            send_notification_email(
+                "Your SparkyEvents password was changed",
+                password_changed_message(user.first_name or user.username),
+                user.email,
+            )
             messages.success(request, "Password changed successfully.")
         else:
             for field_errors in form.errors.values():
@@ -635,7 +756,16 @@ def company_login(request):
 
 
 def company_forget(request):
-    return render(request, 'comdas/company_forget.html')
+    return _request_password_reset(
+        request, role='company', role_model=Company, template='comdas/company_forget.html',
+        login_url_name='companylogin', reset_url_name='companyreset',
+    )
+
+
+def company_reset(request, token):
+    return _reset_password(
+        request, token, role='company', forget_url_name='companyforget', login_url_name='companylogin',
+    )
 
 
 @company_required
@@ -701,6 +831,11 @@ def company_change_password(request):
         if form.is_valid():
             user = form.save()
             update_session_auth_hash(request, user)  # keeps them logged in after the change
+            send_notification_email(
+                "Your SparkyEvents password was changed",
+                password_changed_message(user.first_name or user.username),
+                user.email,
+            )
             messages.success(request, "Password changed successfully.")
         else:
             for field_errors in form.errors.values():

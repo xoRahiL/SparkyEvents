@@ -11,6 +11,7 @@ urlpatterns = [
     path('workhandlogin/', views.workhand_login, name='workhandlogin'),
     path('workhandlogout/', views.workhand_logout, name='workhandlogout'),
     path('workhandforget/', views.workhand_forget, name='workhandforget'),
+    path('workhandreset/<str:token>/', views.workhand_reset, name='workhandreset'),
 
     # WORKHAND DASHBOARD SIDE
     path('workhanddashboard/', views.workhand_dashboard, name='workhanddashboard'),
@@ -28,6 +29,7 @@ urlpatterns = [
     path('companylogin/', views.company_login, name='companylogin'),
     path('companylogout/', views.company_logout, name='companylogout'),
     path('companyforget/', views.company_forget, name='companyforget'),
+    path('companyreset/<str:token>/', views.company_reset, name='companyreset'),
 
     # COMPANY DASHBOARD SIDE
     path('companydashboard/', views.company_dashboard, name='companydashboard'),

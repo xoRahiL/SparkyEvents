@@ -158,6 +158,9 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # used by `collectstatic` in production
 # entire `collectstatic` run.
 
 STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
     },
