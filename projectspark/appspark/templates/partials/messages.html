@@ -1,0 +1,42 @@
+{% if messages %}
+<div class="toast-stack" style="position: fixed; top: 20px; right: 20px; z-index: 9999; width: 340px;">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} shadow-sm d-flex align-items-start gap-2 fade-toast"
+         role="alert" style="animation: toastSlideIn 0.3s ease-out;">
+        {% if message.tags == 'success' %}
+        <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+        {% elif message.tags == 'danger' %}
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+        {% elif message.tags == 'warning' %}
+        <i class="bi bi-exclamation-circle-fill flex-shrink-0"></i>
+        {% else %}
+        <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+        {% endif %}
+        <span class="flex-grow-1">{{ message }}</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    @keyframes toastSlideIn {
+        from { transform: translateX(20px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .toast-stack .alert {
+        border-radius: 10px;
+        border: none;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.toast-stack .alert').forEach(function (el) {
+        setTimeout(function () {
+            var alertInstance = bootstrap.Alert.getOrCreateInstance(el);
+            alertInstance.close();
+        }, 4000);
+    });
+});
+</script>
+{% endif %}
