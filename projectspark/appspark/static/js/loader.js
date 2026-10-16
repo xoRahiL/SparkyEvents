@@ -3,7 +3,8 @@
  *
  *  - Submitting a form  -> full-screen overlay with a spinner and a message.
  *                          Also blocks accidental double-submits.
- *  - Clicking a link    -> slim progress bar across the top of the page.
+ *  - Clicking a link    -> slim progress bar across the top of the page right away,
+ *                          plus a "Loading <tab name>..." veil if the page is slow (>250ms).
  *
  * Opt out on any form/link with the attribute  data-no-loader
  * Custom overlay text on a form with           data-loading-text="Doing it..."
@@ -16,6 +17,8 @@
   var BRAND = '#f82249';
   var SLOW_AFTER_MS = 8000;      // show the "server is waking up" hint
   var GIVE_UP_AFTER_MS = 90000;  // never leave the page stuck behind an overlay
+  var NAV_OVERLAY_DELAY_MS = 250; // fast page loads never flash the veil
+  var NAV_LABEL_SCOPE = '.sidebar-nav, .dropdown-menu, .header-nav'; // links whose text names a "tab"
 
   // First URL segment -> message. Checked as "segment contains key", in order.
   var MESSAGES = [
@@ -41,7 +44,7 @@
   var SLOW_HINT = 'Still working \u2014 the server may be waking up. Thanks for your patience!';
 
   var overlay, textEl, subEl, bar;
-  var slowTimer = null, giveUpTimer = null, barTimer = null;
+  var slowTimer = null, giveUpTimer = null, barTimer = null, navTimer = null;
   var activeForm = null;
 
   function injectStyles() {
@@ -49,6 +52,7 @@
       '#sparky-loader{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;' +
       'justify-content:center;background:rgba(15,15,25,.6);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}' +
       '#sparky-loader[hidden]{display:none}' +
+      '#sparky-loader.sl-nav{background:rgba(255,255,255,.55);-webkit-backdrop-filter:blur(1px);backdrop-filter:blur(1px)}' +
       '#sparky-loader .sl-box{max-width:320px;margin:16px;padding:28px 32px;border-radius:12px;text-align:center;' +
       'background:#1a1a2e;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.45);font-family:inherit}' +
       '#sparky-loader .sl-spinner{width:44px;height:44px;margin:0 auto 16px;border-radius:50%;' +
@@ -103,8 +107,9 @@
     return DEFAULT_MESSAGE;
   }
 
-  function showOverlay(message) {
+  function showOverlay(message, light) {
     build();
+    overlay.classList.toggle('sl-nav', !!light);
     textEl.textContent = message || DEFAULT_MESSAGE;
     subEl.textContent = '';
     overlay.hidden = false;
@@ -118,7 +123,8 @@
     clearTimeout(slowTimer);
     clearTimeout(giveUpTimer);
     clearTimeout(barTimer);
-    if (overlay) { overlay.hidden = true; subEl.textContent = ''; }
+    clearTimeout(navTimer);
+    if (overlay) { overlay.hidden = true; overlay.classList.remove('sl-nav'); subEl.textContent = ''; }
     if (bar) { bar.style.transition = 'none'; bar.style.width = '0'; bar.style.opacity = '0'; }
     if (activeForm) {
       activeForm.removeAttribute('data-sparky-submitting');
@@ -176,6 +182,17 @@
     return true;
   }
 
+  // "Search Events", "Profile", ... for sidebar / menu links; empty for ordinary links.
+  function labelFor(a) {
+    var custom = a.getAttribute('data-loading-label');
+    if (custom) { return custom; }
+    if (a.closest(NAV_LABEL_SCOPE)) {
+      var text = (a.textContent || '').replace(/\s+/g, ' ').trim();
+      if (text && text.length <= 40) { return text; }
+    }
+    return '';
+  }
+
   function onClick(e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a || !isPlainInternalLink(a, e)) { return; }
@@ -183,8 +200,13 @@
     setTimeout(function () {
       if (e.defaultPrevented) { return; }
       var segment = (new URL(a.href, window.location.href).pathname.split('/')[1] || '').toLowerCase();
-      if (segment.indexOf('logout') !== -1) { showOverlay('Signing you out\u2026'); }
-      else { showBar(); }
+      if (segment.indexOf('logout') !== -1) { showOverlay('Signing you out\u2026'); return; }
+      showBar();
+      var label = labelFor(a);
+      clearTimeout(navTimer);
+      navTimer = setTimeout(function () {
+        showOverlay(label ? 'Loading ' + label + '\u2026' : 'Loading\u2026', true);
+      }, NAV_OVERLAY_DELAY_MS);
     }, 0);
   }
 

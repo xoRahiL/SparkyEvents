@@ -4,7 +4,8 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt && python projectspark/manage.py collectstatic --noinput && python projectspark/manage.py migrate
-    startCommand: gunicorn projectspark.wsgi:application --bind 0.0.0.0:$PORT
+    # 1 worker with 8 threads: pages and static files are served in parallel instead of one at a time.
+    startCommand: gunicorn projectspark.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 60
     envVars:
       - key: DEBUG
         value: "False"

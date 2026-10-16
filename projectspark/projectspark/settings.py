@@ -19,11 +19,10 @@ environ.Env.read_env(BASE_DIR / '.env')
 # --- Core security settings, all from environment ---
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
-# Around line 22 under core security settings:
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '*.onrender.com'])
 CSRF_TRUSTED_ORIGINS = env.list(
     'CSRF_TRUSTED_ORIGINS',
-    default=['https://*.onrender.com', 'https://*.render.com']
+    default=['https://sparkyevents.onrender.com']   # exact site only; add a custom domain via the env var
 )
 
 # --- Email, no longer hardcoded ---
@@ -105,6 +104,11 @@ if env('DATABASE_URL', default=None):
             'HOST': parsed.hostname,
             'PORT': parsed.port or 5432,
             'CONN_MAX_AGE': 60,
+            # Neon can suspend an idle database; without this, the first click after a quiet
+            # spell can hit a dead pooled connection and 500. This pings before reusing one.
+            'CONN_HEALTH_CHECKS': True,
+            # Hosted Postgres (Neon) requires SSL, and the manual URL parsing above drops ?sslmode=...
+            'OPTIONS': {'sslmode': env('DB_SSLMODE', default='require')},
         }
     }
 elif env('DB_ENGINE', default='sqlite') == 'postgresql':
@@ -129,7 +133,6 @@ elif env('DB_ENGINE', default='sqlite') == 'mysql':
             'HOST': env('DB_HOST', default='localhost'),
             'PORT': env('DB_PORT', default='3306'),
             'CONN_MAX_AGE': 60,
-            'OPTIONS': {'sslmode': 'require'},
         }
     }
 else:
@@ -161,6 +164,11 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # used by `collectstatic` in production
 # Compressed storage (not the Manifest variant) so a slightly stale/missing
 # {% static %} reference just 404s that one file instead of failing the
 # entire `collectstatic` run.
+
+# Static files are not content-hashed, so WhiteNoise's default is a 60-second cache: after a minute
+# every tab switch re-requests ~10 files through the single web worker. Cache them for a day in
+# production (hard-refresh after changing CSS/JS); no caching in local development.
+WHITENOISE_MAX_AGE = 0 if DEBUG else 60 * 60 * 24
 
 STORAGES = {
     'default': {

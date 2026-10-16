@@ -8,7 +8,7 @@ from unittest import mock
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.test import TestCase, override_settings
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from appspark import views
@@ -127,8 +127,9 @@ class SetNewPasswordTests(ResetBase):
         page = self.client.get(link)
         self.assertEqual(page.status_code, 200)
         self.assertTemplateUsed(page, 'reset_password.html')
-        # self.assertIn('no-referrer', page.content.decode())   # token must not leak via Referer
-        self.assertIn('same-origin', page.content.decode())
+        # same-origin: the token never leaks to other sites, but the browser still sends a Referer
+        # on our own form POST, which Django's CSRF check requires over HTTPS.
+        self.assertIn('content="same-origin"', page.content.decode())
 
         response = self.client.post(link, {'new_password1': self.NEW, 'new_password2': self.NEW})
         self.assertRedirects(response, reverse('workhandlogin'))
@@ -195,6 +196,35 @@ class SetNewPasswordTests(ResetBase):
         self.wh_user.is_active = False
         self.wh_user.save()
         self.assertIsNone(views.read_reset_token(token, 'workhand'))
+
+
+class ResetCsrfOverHttpsTests(ResetBase):
+    """Regression for the Render 403: the reset form must pass real CSRF checks over HTTPS."""
+
+    def _page(self):
+        self.request_reset('workhand', 'wh@example.com')
+        link = self.last_link()
+        client = Client(enforce_csrf_checks=True)
+        self.assertEqual(client.get(link, secure=True).status_code, 200)
+        data = {
+            'new_password1': self.NEW, 'new_password2': self.NEW,
+            'csrfmiddlewaretoken': client.cookies['csrftoken'].value,
+        }
+        return client, link, data
+
+    def test_post_with_referer_succeeds_over_https(self):
+        client, link, data = self._page()
+        response = client.post(link, data, secure=True, HTTP_REFERER=link.replace('http://', 'https://'))
+        self.assertRedirects(response, reverse('workhandlogin'), fetch_redirect_response=False)
+
+    def test_page_must_not_suppress_the_referer_header(self):
+        # Why the 403 happened: Django refuses an HTTPS POST that has no Referer, and a
+        # <meta name="referrer" content="no-referrer"> makes browsers send none.
+        client, link, data = self._page()
+        response = client.post(link, data, secure=True)          # no Referer, like the old page
+        self.assertEqual(response.status_code, 403)
+        html = client.get(link, secure=True).content.decode()
+        self.assertNotIn('content="no-referrer"', html)
 
 
 class ChangePasswordEmailTests(ResetBase):
