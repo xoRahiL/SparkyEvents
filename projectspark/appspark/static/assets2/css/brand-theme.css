@@ -1,0 +1,201 @@
+/*
+  Brand theme override.
+  The dashboard theme (NiceAdmin) ships with its own default blue (#4154f1),
+  unrelated to SparkyEvents' actual brand color (#f82249), already used
+  consistently on the landing and login/register pages. This file re-points
+  dashboard accents to match, so all three areas feel like one product.
+  Load this AFTER bootstrap.min.css and newstyle.css so it wins the cascade.
+*/
+
+:root {
+    --brand-primary: #f82249;
+    --brand-primary-dark: #e0072f;
+    --bs-primary: #f82249;
+    --bs-primary-rgb: 248, 34, 73;
+}
+
+/* --- Sidebar & tab accents (these do NOT sit on a pink background,
+       so brand-colored text stays readable here) ---
+   IMPORTANT: only the active (:not(.collapsed)) link gets the brand
+   color+background. Inactive/collapsed links must stay untouched (muted
+   navy/grey per the theme's own design) - an earlier attempt at this used
+   !important on a less-specific selector, which incorrectly painted every
+   sidebar link pink regardless of active state, since !important beats
+   specificity even against the theme's own more-specific .collapsed rule. */
+.sidebar-nav .nav-link:not(.collapsed) {
+    color: var(--brand-primary) !important;
+    background: #fdeef1 !important;
+}
+
+.sidebar-nav .nav-link:not(.collapsed) i {
+    color: var(--brand-primary) !important;
+}
+
+.nav-tabs-bordered .nav-link:hover,
+.nav-tabs-bordered .nav-link:focus,
+.nav-tabs-bordered .nav-link.active,
+.sidebar-nav .nav-link:hover,
+.sidebar-nav .nav-link:hover i,
+.sidebar-nav .nav-content a.active,
+.dashboard .filter .icon:focus,
+.dashboard .sales-card .card-icon,
+.dashboard .news h4 a:hover {
+    color: var(--brand-primary) !important;
+}
+
+.nav-tabs-bordered .nav-link.active {
+    border-bottom: 2px solid var(--brand-primary);
+}
+
+.sidebar-nav .nav-content a.active i {
+    background-color: var(--brand-primary);
+}
+
+/* --- Top header bar: background goes brand pink, but every link/icon
+       inside it must stay white, since it sits directly on that pink
+       background (this is what broke last time - a blanket "a { color }"
+       rule made header icons pink-on-pink and invisible) --- */
+#header {
+    background: var(--brand-primary);
+}
+
+#header a,
+#header i,
+#header .nav-link,
+#header .nav-profile span,
+#header .search-form input {
+    color: #fff !important;
+}
+
+/* The dropdown menu popup has a white background, so it must NOT inherit
+   the forced-white header text color above, or its text becomes invisible
+   (this is exactly the bug that broke "My Profile" / "Logout" last time). */
+#header .dropdown-menu,
+#header .dropdown-menu a,
+#header .dropdown-menu i,
+#header .dropdown-menu span,
+#header .dropdown-menu h6 {
+    color: #212529 !important;
+}
+
+#header .dropdown-menu .dropdown-header span {
+    color: var(--brand-primary) !important;
+}
+
+/* Center the logo in the header bar */
+#header .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#header .search-form input::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* --- Dashboard stat number typography --- */
+.info-card h1 {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 2.15rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: #1a1a2e;
+    margin-bottom: 0;
+    font-variant-numeric: tabular-nums; /* keeps digits evenly spaced while the count-up animation runs, instead of jittering side to side */
+    font-feature-settings: 'tnum' 1;
+}
+
+.info-card .card-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6c757d;
+}
+
+.info-card .card-title span {
+    color: var(--brand-primary, #f82249);
+    font-weight: 700;
+}
+
+/* --- Profile pictures: fixed size + object-fit:cover, so a non-square
+       uploaded photo gets cropped into a proper circle instead of
+       stretching into an oval (the theme only set max-height, no width
+       or object-fit, which is exactly what caused the distortion). --- */
+.header-nav .nav-profile img {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px;
+    min-height: 36px;
+    max-height: none !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    flex-shrink: 0;
+}
+
+img.rounded-circle {
+    width: 120px !important;
+    height: 120px !important;
+    min-width: 120px;
+    min-height: 120px;
+    max-height: none !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    border-radius: 50% !important;
+    display: block;
+}
+
+/* --- Buttons: force explicit white text so it never blends into the
+       brand-colored background, regardless of Bootstrap's own defaults --- */
+.btn-primary {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--brand-primary-dark) !important;
+    border-color: var(--brand-primary-dark) !important;
+    color: #fff !important;
+}
+
+.btn-outline-primary {
+    color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--brand-primary) !important;
+    border-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+/* --- Utility classes used directly in templates (badges, backgrounds) --- */
+.bg-primary {
+    background-color: var(--brand-primary) !important;
+    color: #fff !important;
+}
+
+/* Plain text-primary (used for links/icons NOT sitting on a pink
+   background - e.g. card icons, plain body text accents) */
+.text-primary {
+    color: var(--brand-primary) !important;
+}
+
+/* --- Contact form (landing-page-style component reused in dashboard) --- */
+.contact .php-email-form textarea:focus {
+    border-color: var(--brand-primary);
+}
+
+.contact .php-email-form button[type=submit] {
+    background: var(--brand-primary);
+    color: #fff !important;
+}
+
+.contact .php-email-form button[type=submit]:hover {
+    background: var(--brand-primary-dark);
+}

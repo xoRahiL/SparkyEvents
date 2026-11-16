@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: sparky-events
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python projectspark/manage.py collectstatic --noinput && python projectspark/manage.py migrate
+    # 1 worker with 8 threads: pages and static files are served in parallel instead of one at a time.
+    startCommand: gunicorn projectspark.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 60
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: IS_PRODUCTION
+        value: "True"
+      - key: USE_CELERY
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: "your-app-name.onrender.com"

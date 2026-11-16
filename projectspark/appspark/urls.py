@@ -6,28 +6,41 @@ urlpatterns = [
 
     # WORKHAND LOGIN SIDE
     path('workhandregister/', views.workhand_register, name='workhandregister'),
+    path('verifyworkhandotp/', views.verify_workhand_otp, name='verifyworkhandotp'),
+    path('resendworkhandotp/', views.resend_workhand_otp, name='resendworkhandotp'),
     path('workhandlogin/', views.workhand_login, name='workhandlogin'),
     path('workhandlogout/', views.workhand_logout, name='workhandlogout'),
     path('workhandforget/', views.workhand_forget, name='workhandforget'),
+    path('workhandreset/<str:token>/', views.workhand_reset, name='workhandreset'),
 
     # WORKHAND DASHBOARD SIDE
     path('workhanddashboard/', views.workhand_dashboard, name='workhanddashboard'),
     path('workhandprofile/', views.workhand_profile, name='workhandprofile'),
+    path('workhandchangepassword/', views.workhand_change_password, name='workhandchangepassword'),
     path('searchevents/', views.search_events, name='searchevents'),
     path('applyforevent/<int:id>/', views.apply_for_event, name='applyforevent'),
     path('approved/', views.approved, name='approved'),
-    path('eventcompleted/<int:id>/', views.event_completed, name='eventcompleted'),
+    path('markeventcompleted/<int:id>/', views.mark_event_completed, name='markeventcompleted'),
+
+    # WORKHAND EVENT & COMPANY DISCOVERY
+    path('event/<int:id>/', views.event_detail, name='eventdetail'),
+    path('companies/', views.discover_companies, name='discovercompanies'),
+    path('company/<int:id>/', views.company_public_profile, name='companypublicprofile'),
 
     # COMPANY LOGIN SIDE
     path('companyregister/', views.company_register, name='companyregister'),
+    path('verifycompanyotp/', views.verify_company_otp, name='verifycompanyotp'),
+    path('resendcompanyotp/', views.resend_company_otp, name='resendcompanyotp'),
     path('companylogin/', views.company_login, name='companylogin'),
     path('companylogout/', views.company_logout, name='companylogout'),
     path('companyforget/', views.company_forget, name='companyforget'),
+    path('companyreset/<str:token>/', views.company_reset, name='companyreset'),
 
     # COMPANY DASHBOARD SIDE
     path('companydashboard/', views.company_dashboard, name='companydashboard'),
     path('postevent/', views.post_event, name='postevent'),
     path('companyprofile/', views.company_profile, name='companyprofile'),
+    path('companychangepassword/', views.company_change_password, name='companychangepassword'),
     path('manageevent/', views.manage_event, name='manageevent'),
     path('updateevent/<int:id>/', views.update_event, name='updateevent'),
     path('deleteevent/<int:id>/', views.delete_event, name='deleteevent'),
@@ -36,10 +49,12 @@ urlpatterns = [
     path('rejectapp/<int:id>/', views.reject_app, name='rejectapp'),
     path('workhanddetails/<int:id>/', views.workhand_details, name='workhanddetails'),
 
+    # PUBLIC WORKHAND PROFILE (company-side)
+    path('workhand/<int:id>/profile/', views.public_workhand_profile, name='publicworkhandprofile'),
+
+    # HISTORY & FEEDBACK
     path('workhandeventhistory/', views.workhand_event_history, name='workhandeventhistory'),
     path('companyeventhistory/', views.company_event_history, name='companyeventhistory'),
-
     path('workhandfeedback/<int:eid>/', views.workhand_feedback, name='workhandfeedback'),
     path('companyfeedback/<int:id>/', views.company_feedback, name='companyfeedback'),
-
 ]

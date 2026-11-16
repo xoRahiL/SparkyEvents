@@ -1,71 +1,115 @@
 {% extends 'comdas/company_dashboard.html' %}
-{% load static %}
+{% load static humanize %}
 
-{%  block content %}
+{% block content %}
+
+{% include 'partials/messages.html' %}
 
 <div class="pagetitle">
     <h1>Event History</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/companydashboard/">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'companydashboard' %}">Home</a></li>
             <li class="breadcrumb-item active">Event History</li>
         </ol>
     </nav>
 </div>
 
-<div class="col-lg">
+{% if page_obj %}
+<div class="text-muted small mb-3">{{ page_obj.paginator.count }} completed event{{ page_obj.paginator.count|pluralize }}</div>
 
+<div class="row g-4">
+    {% for record in page_obj %}
+    <div class="col-md-6">
+        <div class="card h-100 event-card">
+            <div class="event-banner">
+                <i class="bi {{ record.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                <img class="company-avatar" src="{{ record.workhand_id.profile_pic.url }}" alt="{{ record.workhand_id.user.first_name }}" onerror="this.onerror=null;this.outerHTML='<div class=&quot;company-avatar&quot;>{{ record.workhand_id.user.first_name|first|upper }}</div>';">
+            </div>
+            <div class="card-body d-flex flex-column">
+                <div class="text-muted small mb-1">
+                    {{ record.workhand_id.user.first_name }} {{ record.workhand_id.user.last_name }}
+                </div>
+                <h5 class="card-title mb-2">{{ record.event_name }}</h5>
+                <p class="card-text text-muted small mb-3">{{ record.description|truncatewords:14 }}</p>
 
-    <!-- Events Posted -->
-    <div class="col-12">
-        <div class="card recent-sales overflow-auto">
-            <div class="card-body">
-                <h5 class="card-title">Manage <span>| Events</span></h5>
-                <table class="table table-borderless datatable">
-                    <thead>
-                    <tr>
-                        <th scope="col">Sno</th>
-                        <th scope="col">Event Name</th>
-                        <th scope="col">Description</th>
-                        <th scope="col">Start Date</th>
-                        <th scope="col">End Date</th>
-                        <th scope="col">Payment</th>
-                        <th scope="col">Address</th>
-                        <th scope="col">State</th>
-                        <th scope="col">City</th>
-                        <th scope="col">Workhand Needed</th>
-                        <th scope="col">Workhand Name</th>
-                        <th scope="col">Feedback</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for eh in eh %}
-                    <tr>
-                        <td scope="col">{{forloop.counter}}</td>
-                        <td scope="col">{{eh.event_name}}</td>
-                        <td scope="col">{{eh.description}}</td>
-                        <td scope="col">{{eh.start_date}}</td>
-                        <td scope="col">{{eh.end_date}}</td>
-                        <td scope="col">{{eh.payment_range}}</td>
-                        <td scope="col">{{eh.address}}</td>
-                        <td scope="col">{{eh.state}}</td>
-                        <td scope="col">{{eh.city}}</td>
-                        <td scope="col">{{eh.workhand_needed}}</td>
-                        <td scope="col">{{eh.workhand_id.user.first_name}}</td>
-                        <td scope="col ">
-                            <a href="/companyfeedback/{{eh.id}}/" class="btn btn-primary">
-                                <i class="bi bi-chat-right-text-fill text-dark text-light"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                <div class="stat-row mb-3">
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="stat-value">₹{{ record.payment_range|floatformat:0|intcomma }}</div>
+                            <div class="stat-label">Paid</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-geo-alt"></i>
+                        <div>
+                            <div class="stat-value">{{ record.city }}</div>
+                            <div class="stat-label">Location</div>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{% url 'companyfeedback' record.id %}" class="btn btn-primary mt-auto">
+                    <i class="bi bi-chat-right-text-fill"></i> Give Feedback
+                </a>
             </div>
         </div>
     </div>
-    <!-- End Events Posted -->
-
+    {% endfor %}
 </div>
+
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-clock-history" style="font-size: 2.5rem; opacity: 0.4;"></i>
+    <p class="text-muted mt-3 mb-0">No completed events yet.</p>
+</div>
+{% endif %}
+
+<style>
+    .event-card { border: 1px solid #eee; border-radius: 14px; overflow: hidden; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .event-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.1); }
+    .event-banner { position: relative; height: 90px; background: linear-gradient(135deg, var(--brand-primary, #f82249), var(--brand-primary-dark, #e0072f)); display: flex; align-items: center; justify-content: center; }
+    .event-banner i { font-size: 2.75rem; color: rgba(255,255,255,0.9); }
+    .company-avatar { position: absolute; bottom: -18px; left: 16px; width: 40px; height: 40px; border-radius: 50%; background: #fff; color: var(--brand-primary, #f82249); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+    .card-body { padding-top: 1.75rem; }
+    .stat-row { display: flex; gap: 8px; }
+    .stat-chip { flex: 1; display: flex; align-items: center; gap: 6px; background: #f8f9fc; border-radius: 8px; padding: 8px 6px; min-width: 0; overflow: hidden; }
+    .stat-chip > div { min-width: 0; overflow: hidden; }
+    .stat-chip i { color: var(--brand-primary, #f82249); font-size: 1.1rem; flex-shrink: 0; }
+    .stat-value { font-size: 0.8rem; font-weight: 700; line-height: 1.2; white-space: normal; overflow-wrap: break-word; }
+    .stat-label { font-size: 0.65rem; color: #888; }
+
+    @media (max-width: 576px) {
+        .event-card:hover { transform: none; }
+        .event-banner { height: 80px; }
+        .event-banner i { font-size: 2.2rem; }
+        .company-avatar { width: 36px; height: 36px; bottom: -16px; }
+        .card-body { padding-top: 1.25rem; padding: 1rem; }
+        .stat-row { flex-direction: column; gap: 6px; }
+        .stat-chip { padding: 6px 4px; }
+        .stat-value { font-size: 0.75rem; }
+        .stat-label { font-size: 0.6rem; }
+        .card-title { font-size: 1rem; }
+    }
+</style>
 
 {% endblock %}

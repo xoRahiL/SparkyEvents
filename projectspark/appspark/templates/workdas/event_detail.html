@@ -1,0 +1,343 @@
+{% extends 'workdas/workhand_dashboard.html' %}
+{% load static humanize %}
+
+{% block content %}
+
+{% include 'partials/messages.html' %}
+
+<div class="pagetitle">
+    <h1>Event Detail</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'searchevents' %}">Search Events</a></li>
+            <li class="breadcrumb-item active">{{ event.event_name }}</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row g-4">
+
+    <!-- ===== Left column: event card ===== -->
+    <div class="col-lg-8">
+        <div class="card event-detail-card">
+
+            <!-- Coloured banner with category icon -->
+            <div class="ed-banner">
+                <i class="bi {{ event.category_icon }}"></i>
+                <span class="ed-category-badge">{{ event.event_category }}</span>
+            </div>
+
+            <div class="card-body">
+
+                <!-- Company avatar + name row -->
+                <div class="d-flex align-items-center gap-3 mb-3 mt-1">
+                    <img class="ed-company-avatar"
+                         src="{{ event.company_id.profile_pic.url }}"
+                         alt="{{ event.company_id.user.first_name }}"
+                         onerror="this.onerror=null;this.outerHTML='<div class=&quot;ed-company-avatar ed-avatar-fallback&quot;>{{ event.company_id.user.first_name|first|upper }}</div>';">
+                    <div>
+                        <div class="fw-semibold">{{ event.company_id.user.first_name }}</div>
+                        <div class="text-muted small">
+                            <i class="bi bi-geo-alt"></i>
+                            {{ event.city }}, {{ event.state }}
+                        </div>
+                    </div>
+                    <a href="{% url 'companypublicprofile' event.company_id.id %}"
+                       class="btn btn-sm btn-outline-secondary ms-auto">
+                        <i class="bi bi-building"></i> View Company
+                    </a>
+                </div>
+
+                <h3 class="mb-2">{{ event.event_name }}</h3>
+
+                {% if event.workhand_category %}
+                <div class="role-badge mb-3">
+                    <i class="bi bi-briefcase"></i> Hiring: <strong>{{ event.workhand_category }}</strong>
+                </div>
+                {% endif %}
+
+                <!-- Key stats row -->
+                <div class="stat-row mb-4">
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="stat-value">₹{{ event.payment_range|floatformat:0|intcomma }}</div>
+                            <div class="stat-label">Budget</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-people"></i>
+                        <div>
+                            <div class="stat-value">{{ approved_count }} / {{ event.workhand_needed }}</div>
+                            <div class="stat-label">Slots filled</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-hourglass-split"></i>
+                        <div>
+                            <div class="stat-value">{{ event.start_date|timeuntil }}</div>
+                            <div class="stat-label">Starts in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slot progress bar -->
+                {% if event.workhand_needed %}
+                {% with pct=approved_count|stringformat:"s" %}
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Slots filled</span>
+                        <span>{{ approved_count }} of {{ event.workhand_needed }}</span>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 6px;">
+                        {% if slots_remaining == 0 %}
+                        <div class="progress-bar bg-danger" role="progressbar" style="width:100%"></div>
+                        {% else %}
+                        <div class="progress-bar"
+                             role="progressbar"
+                             style="width: {% widthratio approved_count event.workhand_needed 100 %}%; background: var(--brand-primary, #f82249);">
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if slots_remaining == 0 %}
+                    <div class="small text-danger mt-1"><i class="bi bi-exclamation-circle"></i> All slots are filled for this event.</div>
+                    {% else %}
+                    <div class="small text-muted mt-1">{{ slots_remaining }} slot{{ slots_remaining|pluralize }} remaining</div>
+                    {% endif %}
+                </div>
+                {% endwith %}
+                {% endif %}
+
+                <!-- Description -->
+                <h6 class="fw-semibold mb-2">About this event</h6>
+                <p class="text-muted" style="line-height: 1.7;">{{ event.description }}</p>
+
+                <hr class="my-3">
+
+                <!-- Dates & location detail -->
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <div class="detail-block">
+                            <i class="bi bi-calendar-event"></i>
+                            <div>
+                                <div class="detail-label">Start Date</div>
+                                <div class="detail-value">{{ event.start_date|date:"d M Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="detail-block">
+                            <i class="bi bi-calendar-check"></i>
+                            <div>
+                                <div class="detail-label">End Date</div>
+                                <div class="detail-value">{{ event.end_date|date:"d M Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="detail-block">
+                            <i class="bi bi-geo-alt-fill"></i>
+                            <div>
+                                <div class="detail-label">Venue</div>
+                                <div class="detail-value">{{ event.address }}, {{ event.city }}, {{ event.state }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Apply / status button -->
+                {% if existing_application %}
+                    {% if existing_application.status %}
+                    <button class="btn btn-success w-100" disabled>
+                        <i class="bi bi-check-circle-fill"></i> You're approved for this event!
+                    </button>
+                    {% else %}
+                    <button class="btn btn-secondary w-100" disabled>
+                        <i class="bi bi-clock-history"></i> Application pending approval
+                    </button>
+                    {% endif %}
+                {% elif slots_remaining == 0 %}
+                <button class="btn btn-outline-danger w-100" disabled>
+                    <i class="bi bi-x-circle"></i> No slots remaining
+                </button>
+                {% else %}
+                <form method="post" action="{% url 'applyforevent' event.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary w-100">
+                        Apply Now <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Right column: company snippet + related events ===== -->
+    <div class="col-lg-4">
+
+        <!-- Company snapshot card -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <img src="{{ event.company_id.profile_pic.url }}"
+                     class="rounded-circle mb-2"
+                     style="width:92px;height:92px;object-fit:cover;border:3px solid rgba(248,34,73,0.2);box-shadow:0 4px 14px rgba(0,0,0,0.12);"
+                     alt="{{ event.company_id.user.first_name }}"
+                     onerror="this.src='{% static 'assets2/img/AnonymousPic.png' %}'">
+                <h6 class="fw-bold mb-0 text-capitalize">{{ event.company_id.user.first_name }}</h6>
+                {% if event.company_id.city %}
+                <div class="text-muted small mb-2">
+                    <i class="bi bi-geo-alt"></i> {{ event.company_id.city }}, {{ event.company_id.state }}
+                </div>
+                {% endif %}
+                <a href="{% url 'companypublicprofile' event.company_id.id %}"
+                   class="btn btn-sm btn-outline-primary w-100 mt-1">
+                    <i class="bi bi-building"></i> View Profile
+                </a>
+            </div>
+        </div>
+
+        <!-- Related events by this company -->
+        {% if related_events %}
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">More from {{ event.company_id.user.first_name }}</h6>
+                {% for rel in related_events %}
+                <a href="{% url 'eventdetail' rel.id %}" class="text-decoration-none">
+                    <div class="mini-event-row">
+                        <div class="mini-event-icon">
+                            <i class="bi {{ rel.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                        </div>
+                        <div class="flex-grow-1 min-w-0">
+                            <div class="fw-semibold text-truncate text-dark">{{ rel.event_name }}</div>
+                            <div class="text-muted small">
+                                {{ rel.city }} &middot; {{ rel.start_date|date:"d M Y" }}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    .event-detail-card {
+        border: 1px solid #eee;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .ed-banner {
+        position: relative;
+        height: 110px;
+        background: linear-gradient(135deg, var(--brand-primary, #f82249), var(--brand-primary-dark, #e0072f));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ed-banner > i {
+        font-size: 3rem;
+        color: rgba(255,255,255,0.85);
+    }
+    .ed-category-badge {
+        position: absolute;
+        top: 12px;
+        right: 14px;
+        background: rgba(255,255,255,0.2);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+        backdrop-filter: blur(4px);
+    }
+    .ed-company-avatar {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid rgba(248,34,73,0.2);
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .ed-avatar-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--brand-primary, #f82249);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: var(--brand-primary, #f82249);
+        background: rgba(248, 34, 73, 0.08);
+        padding: 5px 10px;
+        border-radius: 6px;
+        width: fit-content;
+    }
+    .stat-row { display: flex; gap: 8px; }
+    .stat-chip {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 8px 6px;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .stat-chip i { color: var(--brand-primary, #f82249); font-size: 1.1rem; flex-shrink: 0; }
+    .stat-value { font-size: 0.8rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word; }
+    .stat-label { font-size: 0.65rem; color: #888; }
+    .detail-block {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 10px 12px;
+    }
+    .detail-block > i {
+        color: var(--brand-primary, #f82249);
+        font-size: 1.1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .detail-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+    .detail-value { font-size: 0.9rem; font-weight: 600; }
+    .mini-event-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 4px;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.1s;
+    }
+    .mini-event-row:last-child { border-bottom: none; }
+    .mini-event-row:hover { background: #fafafa; border-radius: 8px; }
+    .mini-event-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: var(--brand-primary, #f82249);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.95rem;
+    }
+    .min-w-0 { min-width: 0; }
+</style>
+
+{% endblock %}

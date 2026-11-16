@@ -1,73 +1,450 @@
 {% extends 'workdas/workhand_dashboard.html' %}
-{% load static %}
+{% load static humanize %}
 
-{%  block content %}
+{% block content %}
 
-<!-- End Approved Events -->
+{% include 'partials/messages.html' %}
 
 <div class="pagetitle">
-    <h1>Approved Events</h1>
+    <h1>My Applications</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/workhanddashboard/">Home</a></li>
-            <li class="breadcrumb-item active">Approved Events</li>
+            <li class="breadcrumb-item"><a href="{% url 'workhanddashboard' %}">Home</a></li>
+            <li class="breadcrumb-item active">My Applications</li>
         </ol>
     </nav>
 </div>
 
-<div class="col-xxl">
-    <div class="card recent-sales overflow-auto">
-        <div class="card-body">
-            <h5 class="card-title">Approved <span>| Events</span></h5>
-            <table class="table table-borderless datatable">
-                <thead>
-                <tr>
-                    <th scope="col">Sno</th>
-                    <th scope="col">Company Name</th>
-                    <th scope="col">Event Name</th>
-                    <th scope="col">Event Category</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Email</th>
-                    <th scope="col">Contact</th>
-                    <th scope="col">Start Date</th>
-                    <th scope="col">End Date</th>
-                    <th scope="col">Address</th>
-                    <th scope="col">State</th>
-                    <th scope="col">City</th>
-                    <th scope="col">Budget</th>
-                    <th scope="col">Status</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for app in app %}
-                {% if app.status == True %}
-                <tr>
-                    <td scope="col">{{forloop.counter}}</td>
-                    <td scope="col">{{app.to_company.user.first_name}}</td>
-                    <td scope="col">{{app.event.event_name}}</td>
-                    <td scope="col">{{app.event.event_category}}</td>
-                    <td scope="col">{{app.event.description}}</td>
-                    <td scope="col">{{app.to_company.user.email}}</td>
-                    <td scope="col">{{app.to_company.contact}}</td>
-                    <td scope="col">{{app.event.start_date}}</td>
-                    <td scope="col">{{app.event.end_date}}</td>
-                    <td scope="col">{{app.event.address}}</td>
-                    <td scope="col">{{app.event.state}}</td>
-                    <td scope="col">{{app.event.city}}</td>
-                    <td scope="col">{{app.event.payment_range}}</td>
-                    <td scope="col">
-                        <a href="/eventcompleted/{{app.id}}/" class="btn btn-primary mb-2">
-                            <i class="bi bi-check2-circle"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endif %}
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+<!-- ── Filter tabs ───────────────────────────────────────── -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+    <a href="?status="
+       class="btn btn-sm {% if status_filter == '' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+        All
+    </a>
+    <a href="?status=pending"
+       class="btn btn-sm {% if status_filter == 'pending' %}btn-warning text-dark{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-hourglass-split"></i> Pending
+    </a>
+    <a href="?status=approved"
+       class="btn btn-sm {% if status_filter == 'approved' %}btn-success{% else %}btn-outline-secondary{% endif %}">
+        <i class="bi bi-check2-circle"></i> Approved
+    </a>
+    {% if page_obj %}
+    <span class="ms-auto text-muted small align-self-center">
+        {{ page_obj.paginator.count }} application{{ page_obj.paginator.count|pluralize }}
+    </span>
+    {% endif %}
 </div>
-<!-- End Approved Events -->
+
+{% if page_obj %}
+<div class="row g-4">
+    {% for application in page_obj %}
+    <div class="col-md-6">
+        <div class="card h-100 app-card">
+
+            <!-- Banner: event icon + company avatar -->
+            <div class="app-banner">
+                <i class="bi {{ application.event.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                <span class="app-category-pill">{{ application.event.event_category }}</span>
+                <img class="co-avatar"
+                     src="{{ application.to_company.profile_pic.url }}"
+                     alt="{{ application.to_company.user.first_name }}"
+                     onerror="this.onerror=null;this.outerHTML='<div class=&quot;co-avatar co-avatar-fallback&quot;>{{ application.to_company.user.first_name|first|upper }}</div>';">
+            </div>
+
+            <div class="card-body d-flex flex-column">
+
+                <!-- Company + status -->
+                <div class="d-flex align-items-start justify-content-between mb-2">
+                    <div>
+                        <div class="fw-semibold text-capitalize">{{ application.to_company.user.first_name }}</div>
+                        {% if application.to_company.city %}
+                        <div class="text-muted small">
+                            <i class="bi bi-geo-alt"></i>
+                            {{ application.to_company.city }}{% if application.to_company.state %}, {{ application.to_company.state }}{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if application.status %}
+                    <span class="badge bg-success">Approved</span>
+                    {% else %}
+                    <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                </div>
+
+                <!-- Event name + location -->
+                <h5 class="card-title mb-1">{{ application.event.event_name }}</h5>
+                <div class="text-muted small mb-3">
+                    <i class="bi bi-geo-alt"></i> {{ application.event.city }}, {{ application.event.state }}
+                </div>
+
+                <!-- Key stats row -->
+                <div class="stat-row mb-3">
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="stat-value">₹{{ application.event.payment_range|floatformat:0|intcomma }}</div>
+                            <div class="stat-label">Budget</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-calendar-event"></i>
+                        <div>
+                            <div class="stat-value">{{ application.event.start_date|date:"d M Y" }}</div>
+                            <div class="stat-label">Starts</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-people"></i>
+                        <div>
+                            <div class="stat-value">{{ application.slots_filled }}/{{ application.event.workhand_needed }}</div>
+                            <div class="stat-label">Slots</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom row: View Details + status indicator -->
+                <div class="mt-auto d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-primary btn-sm flex-grow-1"
+                            type="button"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#offcanvas-app-{{ application.id }}"
+                            aria-controls="offcanvas-app-{{ application.id }}">
+                        <i class="bi bi-info-circle"></i> View Full Details
+                    </button>
+
+                    {% if application.status %}
+                    <span class="badge bg-success py-2 px-3">
+                        <i class="bi bi-check2"></i> You're in!
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary py-2 px-3">
+                        <i class="bi bi-clock"></i> Awaiting
+                    </span>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div><!-- /col -->
+
+    <!-- ── Offcanvas: full event + company details ─────────── -->
+    <div class="offcanvas offcanvas-end offcanvas-wide"
+         tabindex="-1"
+         id="offcanvas-app-{{ application.id }}"
+         aria-labelledby="offcanvas-label-{{ application.id }}">
+
+        <div class="offcanvas-header border-bottom pb-3">
+            <!-- Mini event banner inside offcanvas header -->
+            <div class="d-flex align-items-center gap-3">
+                <div class="oc-event-icon">
+                    <i class="bi {{ application.event.category_icon|default:'bi-calendar-event-fill' }}"></i>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold" id="offcanvas-label-{{ application.id }}">
+                        {{ application.event.event_name }}
+                    </h6>
+                    <div class="text-muted small">{{ application.event.event_category }}</div>
+                </div>
+                {% if application.status %}
+                <span class="badge bg-success ms-auto me-2">Approved</span>
+                {% else %}
+                <span class="badge bg-warning text-dark ms-auto me-2">Pending</span>
+                {% endif %}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <div class="offcanvas-body">
+
+            <!-- ── Event Details ───────────────────────── -->
+            <div class="oc-section-label mb-3">Event Details</div>
+
+            <!-- Slot progress bar -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Slots filled</span>
+                    <span>{{ application.slots_filled }} of {{ application.event.workhand_needed }}</span>
+                </div>
+                <div class="progress" style="height:7px;border-radius:6px;">
+                    {% if application.event.workhand_needed %}
+                    <div class="progress-bar"
+                         role="progressbar"
+                         style="width:{% widthratio application.slots_filled application.event.workhand_needed 100 %}%;background:var(--brand-primary,#f82249);">
+                    </div>
+                    {% endif %}
+                </div>
+                {% if application.slots_filled >= application.event.workhand_needed %}
+                <div class="small text-danger mt-1"><i class="bi bi-exclamation-circle"></i> All slots filled</div>
+                {% endif %}
+            </div>
+
+            <div class="row g-2 mb-4">
+
+                <div class="col-6">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-calendar-event"></i>
+                        <div>
+                            <div class="oc-detail-label">Start Date</div>
+                            <div class="oc-detail-value">{{ application.event.start_date|date:"d M Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-calendar-check"></i>
+                        <div>
+                            <div class="oc-detail-label">End Date</div>
+                            <div class="oc-detail-value">{{ application.event.end_date|date:"d M Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-cash-coin"></i>
+                        <div>
+                            <div class="oc-detail-label">Payment</div>
+                            <div class="oc-detail-value">₹{{ application.event.payment_range|floatformat:0|intcomma }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-briefcase"></i>
+                        <div>
+                            <div class="oc-detail-label">Role Needed</div>
+                            <div class="oc-detail-value">{{ application.event.workhand_category|default:"—" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <div>
+                            <div class="oc-detail-label">Venue</div>
+                            <div class="oc-detail-value">
+                                {{ application.event.address }},
+                                {{ application.event.city }}, {{ application.event.state }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <div class="oc-detail-block align-items-start">
+                        <i class="bi bi-card-text mt-1"></i>
+                        <div>
+                            <div class="oc-detail-label">Description</div>
+                            <div class="oc-detail-value" style="font-weight:400;line-height:1.65;font-size:.88rem;">
+                                {{ application.event.description }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ── Company Details ─────────────────────── -->
+            <div class="oc-section-label mb-3">About the Company</div>
+
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <img src="{{ application.to_company.profile_pic.url }}"
+                     class="oc-co-logo"
+                     alt="{{ application.to_company.user.first_name }}"
+                     onerror="this.src='{% static 'assets2/img/AnonymousPic.png' %}'">
+                <div>
+                    <div class="fw-semibold text-capitalize">{{ application.to_company.user.first_name }}</div>
+                    {% if application.to_company.city %}
+                    <div class="text-muted small">
+                        <i class="bi bi-geo-alt"></i>
+                        {{ application.to_company.city }}{% if application.to_company.state %}, {{ application.to_company.state }}{% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="{% url 'companypublicprofile' application.to_company.id %}"
+                   class="btn btn-sm btn-outline-secondary ms-auto">
+                    <i class="bi bi-box-arrow-up-right"></i> Full Profile
+                </a>
+            </div>
+
+            <div class="row g-2 mb-2">
+
+                {% if application.to_company.contact %}
+                <div class="col-6">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-telephone"></i>
+                        <div>
+                            <div class="oc-detail-label">Contact</div>
+                            <div class="oc-detail-value">{{ application.to_company.contact }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="col-{% if application.to_company.contact %}6{% else %}12{% endif %}">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-envelope"></i>
+                        <div>
+                            <div class="oc-detail-label">Email</div>
+                            <div class="oc-detail-value" style="word-break:break-all;">
+                                {{ application.to_company.user.email }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if application.to_company.address %}
+                <div class="col-12">
+                    <div class="oc-detail-block">
+                        <i class="bi bi-building"></i>
+                        <div>
+                            <div class="oc-detail-label">Address</div>
+                            <div class="oc-detail-value">{{ application.to_company.address }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <!-- Application status reminder at the bottom -->
+            <div class="mt-4 pt-3 border-top text-center">
+                {% if application.status %}
+                <div class="alert alert-success py-2 mb-0">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <strong>You're approved!</strong> Show up on {{ application.event.start_date|date:"d M Y" }}.
+                </div>
+                {% else %}
+                <div class="alert alert-warning py-2 mb-0">
+                    <i class="bi bi-hourglass-split"></i>
+                    <strong>Pending.</strong> The company hasn't reviewed your application yet.
+                </div>
+                {% endif %}
+            </div>
+
+        </div><!-- /offcanvas-body -->
+    </div><!-- /offcanvas -->
+
+    {% endfor %}
+</div><!-- /row -->
+
+<!-- Pagination -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}">Previous</a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&status={{ status_filter }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}">Next</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="bi bi-hourglass-split" style="font-size: 2.5rem; opacity: 0.4;"></i>
+    <p class="text-muted mt-3 mb-3">
+        {% if status_filter %}No {{ status_filter }} applications.{% else %}No applications yet.{% endif %}
+    </p>
+    <a href="{% url 'searchevents' %}" class="btn btn-primary">
+        <i class="bi bi-search"></i> Find Events to Apply
+    </a>
+</div>
+{% endif %}
+
+<style>
+/* ── Application card ─────────────────────────────────── */
+.app-card {
+    border: 1px solid #eee;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.app-card:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(0,0,0,.09); }
+
+.app-banner {
+    position: relative;
+    height: 88px;
+    background: linear-gradient(135deg, var(--brand-primary,#f82249), var(--brand-primary-dark,#e0072f));
+    display: flex; align-items: center; justify-content: center;
+}
+.app-banner > i { font-size: 2.6rem; color: rgba(255,255,255,.88); }
+.app-category-pill {
+    position: absolute; top: 10px; right: 12px;
+    background: rgba(255,255,255,.2); color: #fff;
+    font-size: .7rem; font-weight: 600;
+    padding: 2px 9px; border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+.co-avatar {
+    position: absolute; bottom: -20px; left: 16px;
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 3px solid #fff; object-fit: cover;
+    background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.co-avatar-fallback {
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.1rem;
+    color: var(--brand-primary,#f82249);
+}
+.card-body { padding-top: 1.9rem; }
+
+/* stat chips (reused pattern) */
+.stat-row { display: flex; gap: 8px; }
+.stat-chip {
+    flex: 1; display: flex; align-items: center; gap: 6px;
+    background: #f8f9fc; border-radius: 8px; padding: 8px 6px;
+    min-width: 0; overflow: hidden;
+}
+.stat-chip > div { min-width: 0; overflow: hidden; }
+.stat-chip i { color: var(--brand-primary,#f82249); font-size: 1.1rem; flex-shrink: 0; }
+.stat-value { font-size: .8rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word; }
+.stat-label { font-size: .65rem; color: #888; }
+
+/* ── Offcanvas ─────────────────────────────────────────── */
+.offcanvas-wide { width: min(500px, 96vw) !important; }
+
+.oc-event-icon {
+    width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0;
+    background: var(--brand-primary,#f82249); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+}
+.oc-co-logo {
+    width: 72px; height: 72px; border-radius: 50%;
+    object-fit: cover; border: 3px solid rgba(248,34,73,0.2); flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+.oc-section-label {
+    font-size: .7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; color: #aaa;
+}
+.oc-detail-block {
+    display: flex; align-items: center; gap: 9px;
+    background: #f8f9fc; border-radius: 9px; padding: 9px 11px;
+    height: 100%;
+}
+.oc-detail-block > i {
+    color: var(--brand-primary,#f82249); font-size: 1rem; flex-shrink: 0;
+}
+.oc-detail-label { font-size: .68rem; color: #999; text-transform: uppercase; letter-spacing: .04em; }
+.oc-detail-value { font-size: .88rem; font-weight: 600; }
+.min-w-0 { min-width: 0; }
+</style>
 
 {% endblock %}
