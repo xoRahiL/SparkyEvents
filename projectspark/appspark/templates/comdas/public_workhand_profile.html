@@ -1,0 +1,244 @@
+{% extends 'comdas/company_dashboard.html' %}
+{% load static humanize %}
+
+{% block content %}
+
+{% include 'partials/messages.html' %}
+
+<div class="pagetitle">
+    <h1>Workhand Profile</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'companydashboard' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'approveapplications' %}">Applications</a></li>
+            <li class="breadcrumb-item active">
+                {{ wu.user.first_name }} {{ wu.user.last_name }}
+            </li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row g-4">
+
+    <!-- ===== Left: bio card ===== -->
+    <div class="col-lg-4">
+        <div class="card text-center mb-4">
+            <div class="pwp-banner">
+                <img src="{{ wu.profile_pic.url }}"
+                     class="pwp-avatar"
+                     alt="{{ wu.user.username }}"
+                     onerror="this.src='{% static 'assets2/img/AnonymousPic.png' %}'">
+            </div>
+            <div class="card-body">
+                <h5 class="fw-bold mb-0 text-capitalize">
+                    {{ wu.user.first_name }} {{ wu.user.last_name }}
+                </h5>
+                <div class="text-muted small mb-1">@{{ wu.user.username }}</div>
+
+                {% if wu.workhand_category %}
+                <div class="role-badge mx-auto mb-3">
+                    <i class="bi bi-briefcase"></i> {{ wu.workhand_category }}
+                </div>
+                {% endif %}
+
+                {% if wu.city %}
+                <p class="text-muted small mb-3">
+                    <i class="bi bi-geo-alt"></i>
+                    {{ wu.city }}{% if wu.state %}, {{ wu.state }}{% endif %}
+                </p>
+                {% endif %}
+
+                <!-- Career stat chips -->
+                <div class="stat-row justify-content-center mb-2">
+                    <div class="stat-chip">
+                        <i class="bi bi-check2-circle"></i>
+                        <div>
+                            <div class="stat-value">{{ events_completed }}</div>
+                            <div class="stat-label">Events done</div>
+                        </div>
+                    </div>
+                    <div class="stat-chip">
+                        <i class="bi bi-cash-stack"></i>
+                        <div>
+                            <div class="stat-value">
+                                {% if total_earned %}₹{{ total_earned|floatformat:0|intcomma }}{% else %}—{% endif %}
+                            </div>
+                            <div class="stat-label">Total earned</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Contact & location card -->
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title">Contact Info</h6>
+                <div class="detail-block mb-2">
+                    <i class="bi bi-envelope"></i>
+                    <div>
+                        <div class="detail-label">Email</div>
+                        <div class="detail-value">{{ wu.user.email }}</div>
+                    </div>
+                </div>
+                {% if wu.contact %}
+                <div class="detail-block mb-2">
+                    <i class="bi bi-telephone"></i>
+                    <div>
+                        <div class="detail-label">Phone</div>
+                        <div class="detail-value">{{ wu.contact }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if wu.address %}
+                <div class="detail-block">
+                    <i class="bi bi-house-door"></i>
+                    <div>
+                        <div class="detail-label">Address</div>
+                        <div class="detail-value">{{ wu.address }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Right: feedback timeline ===== -->
+    <div class="col-lg-8">
+        <h6 class="fw-semibold mb-3">
+            Feedback Received
+            <span class="badge bg-light text-dark border ms-1">{{ feedbacks|length }}</span>
+        </h6>
+
+        {% if feedbacks %}
+        {% for fb in feedbacks %}
+        <div class="card feedback-card mb-3">
+            <div class="card-body">
+
+                <!-- Company + date row -->
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="{{ fb.company_id.profile_pic.url }}"
+                         class="fb-company-avatar"
+                         alt="{{ fb.company_id.user.first_name }}"
+                         onerror="this.onerror=null;this.outerHTML='<div class=&quot;fb-company-avatar fb-avatar-fallback&quot;>{{ fb.company_id.user.first_name|first|upper }}</div>';">
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold text-capitalize">{{ fb.company_id.user.first_name }}</div>
+                        <div class="text-muted small">
+                            For <em>{{ fb.event_id.event_name }}</em>
+                            &middot; {{ fb.date|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-dark border flex-shrink-0">
+                        <i class="bi bi-chat-quote"></i>
+                    </span>
+                </div>
+
+                <div class="fb-title mb-1">{{ fb.feedback_title }}</div>
+                <p class="text-muted mb-0" style="line-height: 1.65;">{{ fb.feedback }}</p>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-chat-square-text" style="font-size: 2.5rem; opacity: 0.4;"></i>
+            <p class="text-muted mt-3 mb-0">No feedback on record for this workhand yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<style>
+    .pwp-banner {
+        height: 90px;
+        background: linear-gradient(135deg, var(--brand-primary, #f82249), var(--brand-primary-dark, #e0072f));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .pwp-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.95);
+        background: #fff;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.82rem;
+        color: var(--brand-primary, #f82249);
+        background: rgba(248, 34, 73, 0.08);
+        padding: 5px 10px;
+        border-radius: 6px;
+        width: fit-content;
+    }
+    .stat-row { display: flex; gap: 8px; }
+    .stat-chip {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 8px 6px;
+        min-width: 0;
+        overflow: hidden;
+    }
+    .stat-chip i { color: var(--brand-primary, #f82249); font-size: 1.1rem; flex-shrink: 0; }
+    .stat-value { font-size: 0.8rem; font-weight: 700; line-height: 1.2; overflow-wrap: break-word; }
+    .stat-label { font-size: 0.65rem; color: #888; }
+    .detail-block {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        background: #f8f9fc;
+        border-radius: 8px;
+        padding: 10px 12px;
+    }
+    .detail-block > i {
+        color: var(--brand-primary, #f82249);
+        font-size: 1rem;
+        margin-top: 2px;
+        flex-shrink: 0;
+    }
+    .detail-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+    .detail-value { font-size: 0.88rem; font-weight: 600; word-break: break-word; }
+    .feedback-card {
+        border: 1px solid #eee;
+        border-radius: 12px;
+        transition: box-shadow 0.15s ease;
+    }
+    .feedback-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+    .fb-company-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #eee;
+        flex-shrink: 0;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
+    .fb-avatar-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--brand-primary, #f82249);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+    }
+    .fb-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #2c2c2c;
+    }
+    .min-w-0 { min-width: 0; }
+</style>
+
+{% endblock %}
