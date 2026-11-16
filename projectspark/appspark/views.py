@@ -1,6 +1,6 @@
 import logging
 import datetime
-import random
+import secrets
 import threading
 from functools import wraps
 
@@ -9,13 +9,14 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.core import signing
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db import transaction, IntegrityError
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
@@ -161,10 +162,12 @@ def otp_message(name, otp):
 
 OTP_EXPIRY_MINUTES = 15
 OTP_RESEND_COOLDOWN_SECONDS = 60
+MAX_OTP_ATTEMPTS = 5
 
 
 def generate_otp():
-    return str(random.randint(100000, 999999))
+    """Generate a cryptographically secure 6-digit numeric OTP."""
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 # ---------------------------------------------------------------------------
@@ -316,11 +319,13 @@ def workhand_register(request):
             otp = generate_otp()
             now = timezone.now()
             request.session['pending_workhand_registration'] = {
-                'username': data['username'], 'email': data['email'], 'password': data['password'],
+                'username': data['username'], 'email': data['email'],
+                'password_hash': make_password(data['password']),
                 'fname': data['fname'], 'lname': data['lname'], 'category_id': data['category'].id,
                 'state': data.get('state', ''), 'city': data.get('city', ''),
                 'propic_path': propic_path,
                 'otp': otp,
+                'attempts': 0,
                 'expires_at': (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
                 'last_sent_at': now.isoformat(),
             }
@@ -348,14 +353,23 @@ def verify_workhand_otp(request):
     if request.method == 'POST':
         entered = request.POST.get('otp', '').strip()
         expires_at = datetime.datetime.fromisoformat(pending['expires_at'])
+        attempts = pending.get('attempts', 0) + 1
+        pending['attempts'] = attempts
+        request.session['pending_workhand_registration'] = pending
+
         if timezone.now() > expires_at:
             messages.error(request, "That code has expired. Request a new one below.")
+        elif attempts > MAX_OTP_ATTEMPTS:
+            del request.session['pending_workhand_registration']
+            messages.error(request, "Too many failed attempts. Registration canceled for security. Please register again.")
+            return redirect('workhandregister')
         elif entered == pending['otp']:
             category = get_object_or_404(WorkhandCategory, id=pending['category_id'])
-            myuser = User.objects.create_user(
-                username=pending['username'], email=pending['email'], password=pending['password'],
+            myuser = User(
+                username=pending['username'], email=pending['email'], password=pending['password_hash'],
                 first_name=pending['fname'], last_name=pending['lname'],
             )
+            myuser.save()
             Workhand.objects.create(
                 user=myuser, workhand_category=category,
                 state=pending.get('state', ''), city=pending.get('city', ''),
@@ -370,7 +384,13 @@ def verify_workhand_otp(request):
             messages.success(request, 'Email verified! Your account is ready — please log in.')
             return redirect('workhandlogin')
         else:
-            messages.error(request, "Incorrect code, please try again.")
+            remaining = MAX_OTP_ATTEMPTS - attempts
+            if remaining > 0:
+                messages.error(request, f"Incorrect code. You have {remaining} attempt(s) remaining.")
+            else:
+                del request.session['pending_workhand_registration']
+                messages.error(request, "Too many failed attempts. Registration canceled for security. Please register again.")
+                return redirect('workhandregister')
 
     return render(request, 'workdas/verify_otp.html', {'email': pending['email']})
 
@@ -389,6 +409,7 @@ def resend_workhand_otp(request):
     otp = generate_otp()
     now = timezone.now()
     pending['otp'] = otp
+    pending['attempts'] = 0
     pending['expires_at'] = (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat()
     pending['last_sent_at'] = now.isoformat()
     request.session['pending_workhand_registration'] = pending
@@ -547,6 +568,7 @@ def search_events(request):
 
 
 @workhand_required
+@require_POST
 def apply_for_event(request, id):
     wu = get_object_or_404(Workhand, user=request.user)
     applied_event = get_object_or_404(Event, id=id)
@@ -583,13 +605,44 @@ def apply_for_event(request, id):
 @workhand_required
 def approved(request):
     wu = get_object_or_404(Workhand, user=request.user)
-    applications = WorkhandApplications.objects.filter(workhand=wu).select_related(
-        'event__event_category', 'to_company__user'
-    ).order_by('-id')
+
+    # Optional filter: all | pending | approved
+    status_filter = request.GET.get('status', '')
+    applications = (WorkhandApplications.objects
+                    .filter(workhand=wu)
+                    .select_related(
+                        'event__event_category',
+                        'event__workhand_category',
+                        'to_company__user',
+                    )
+                    .order_by('-id'))
+    if status_filter == 'pending':
+        applications = applications.filter(status=False)
+    elif status_filter == 'approved':
+        applications = applications.filter(status=True)
+
     paginator = Paginator(applications, 8)
     page_obj = paginator.get_page(request.GET.get('page'))
     attach_category_icons([a.event for a in page_obj if a.event_id])
-    return render(request, 'workdas/approved_applications.html', {'page_obj': page_obj, 'wu': wu})
+
+    # For each application, attach how many slots are already filled so the
+    # workhand can see how competitive the event is.
+    from django.db.models import Count as _Count
+    event_ids = [a.event_id for a in page_obj if a.event_id]
+    slot_counts = (WorkhandApplications.objects
+                   .filter(event_id__in=event_ids, status=True)
+                   .values('event_id')
+                   .annotate(filled=_Count('id')))
+    slots_map = {row['event_id']: row['filled'] for row in slot_counts}
+
+    for app in page_obj:
+        app.slots_filled = slots_map.get(app.event_id, 0)
+
+    return render(request, 'workdas/approved_applications.html', {
+        'page_obj': page_obj,
+        'wu': wu,
+        'status_filter': status_filter,
+    })
 
 
 @company_required
@@ -599,11 +652,24 @@ def mark_event_completed(request, id):
     # Ownership check: only the company that owns this event can close it out.
     e = get_object_or_404(Event, id=id, company_id=company)
 
-    approved_applications = WorkhandApplications.objects.filter(event=e, status=True).select_related('workhand')
+    # Idempotency guard: prevent double-completion if the button is clicked twice.
+    if EventHistory.objects.filter(
+        event_name=e.event_name, company_id=company,
+        start_date=e.start_date, end_date=e.end_date,
+    ).exists():
+        messages.warning(request, "This event has already been marked as completed.")
+        return redirect('manageevent')
 
-    # Create one EventHistory record per approved workhand, so everyone who
-    # actually worked the event keeps a real record of it (and can receive
-    # feedback) - not just whichever person happened to close it out.
+    approved_applications = list(
+        WorkhandApplications.objects.filter(event=e, status=True).select_related('workhand')
+    )
+
+    if not approved_applications:
+        messages.warning(request, "No approved workhands to record. Approve applications first.")
+        return redirect('manageevent')
+
+    # Create one EventHistory record per approved workhand so everyone who
+    # actually worked the event keeps a permanent record for feedback.
     for application in approved_applications:
         EventHistory.objects.create(
             event_name=e.event_name, description=e.description,
@@ -614,10 +680,12 @@ def mark_event_completed(request, id):
             company_id=e.company_id, workhand_id=application.workhand,
         )
 
+    count = len(approved_applications)
+    # Clean up applications and the live event now that history is recorded.
     WorkhandApplications.objects.filter(event=e).delete()
     e.delete()
 
-    messages.success(request, f"Event marked completed. {approved_applications.count()} workhand(s) recorded to history.")
+    messages.success(request, f"Event completed! {count} workhand(s) recorded to history.")
     return redirect('manageevent')
 
 
@@ -646,10 +714,12 @@ def company_register(request):
             otp = generate_otp()
             now = timezone.now()
             request.session['pending_company_registration'] = {
-                'username': data['username'], 'email': data['email'], 'password': data['password'],
+                'username': data['username'], 'email': data['email'],
+                'password_hash': make_password(data['password']),
                 'cname': data['cname'], 'state': data.get('state', ''), 'city': data.get('city', ''),
                 'propic_path': propic_path,
                 'otp': otp,
+                'attempts': 0,
                 'expires_at': (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
                 'last_sent_at': now.isoformat(),
             }
@@ -677,13 +747,22 @@ def verify_company_otp(request):
     if request.method == 'POST':
         entered = request.POST.get('otp', '').strip()
         expires_at = datetime.datetime.fromisoformat(pending['expires_at'])
+        attempts = pending.get('attempts', 0) + 1
+        pending['attempts'] = attempts
+        request.session['pending_company_registration'] = pending
+
         if timezone.now() > expires_at:
             messages.error(request, "That code has expired. Request a new one below.")
+        elif attempts > MAX_OTP_ATTEMPTS:
+            del request.session['pending_company_registration']
+            messages.error(request, "Too many failed attempts. Registration canceled for security. Please register again.")
+            return redirect('companyregister')
         elif entered == pending['otp']:
-            myuser = User.objects.create_user(
-                username=pending['username'], email=pending['email'], password=pending['password'],
+            myuser = User(
+                username=pending['username'], email=pending['email'], password=pending['password_hash'],
                 first_name=pending['cname'],
             )
+            myuser.save()
             Company.objects.create(
                 user=myuser, company_name=pending['cname'],
                 state=pending.get('state', ''), city=pending.get('city', ''),
@@ -698,7 +777,13 @@ def verify_company_otp(request):
             messages.success(request, 'Email verified! Your account is ready — please log in.')
             return redirect('companylogin')
         else:
-            messages.error(request, "Incorrect code, please try again.")
+            remaining = MAX_OTP_ATTEMPTS - attempts
+            if remaining > 0:
+                messages.error(request, f"Incorrect code. You have {remaining} attempt(s) remaining.")
+            else:
+                del request.session['pending_company_registration']
+                messages.error(request, "Too many failed attempts. Registration canceled for security. Please register again.")
+                return redirect('companyregister')
 
     return render(request, 'comdas/verify_otp.html', {'email': pending['email']})
 
@@ -717,6 +802,7 @@ def resend_company_otp(request):
     otp = generate_otp()
     now = timezone.now()
     pending['otp'] = otp
+    pending['attempts'] = 0
     pending['expires_at'] = (now + datetime.timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat()
     pending['last_sent_at'] = now.isoformat()
     request.session['pending_company_registration'] = pending
@@ -920,14 +1006,61 @@ def manage_event(request):
 @company_required
 def approve_applications(request):
     company = get_object_or_404(Company, user=request.user)
+
+    # Optional filter: show only pending or only approved applications.
+    status_filter = request.GET.get('status', '')  # '' | 'pending' | 'approved'
     applications = (WorkhandApplications.objects
-                     .filter(to_company=company)
-                     .select_related('workhand__user', 'event__event_category')
-                     .order_by('-id'))
+                    .filter(to_company=company)
+                    .select_related(
+                        'workhand__user', 'workhand__workhand_category',
+                        'event__event_category',
+                    )
+                    .order_by('-id'))
+    if status_filter == 'pending':
+        applications = applications.filter(status=False)
+    elif status_filter == 'approved':
+        applications = applications.filter(status=True)
+
     paginator = Paginator(applications, 8)
     page_obj = paginator.get_page(request.GET.get('page'))
     attach_category_icons([a.event for a in page_obj if a.event_id])
-    return render(request, 'comdas/approve_applications.html', {'page_obj': page_obj, 'c': company})
+
+    # For each application on this page, fetch the workhand's completed-event
+    # history (up to 5) so the company can judge experience before deciding.
+    workhand_ids = [a.workhand_id for a in page_obj if a.workhand_id]
+    history_qs = (EventHistory.objects
+                  .filter(workhand_id__in=workhand_ids)
+                  .select_related('event_category', 'company_id__user')
+                  .order_by('-id'))
+
+    # Group history by workhand pk for O(1) lookup in the template.
+    from collections import defaultdict
+    workhand_history: dict = defaultdict(list)
+    for record in history_qs:
+        if len(workhand_history[record.workhand_id_id]) < 5:
+            workhand_history[record.workhand_id_id].append(record)
+
+    attach_category_icons(list(history_qs))
+
+    # Also attach a completed-count annotation to each application object so
+    # the template doesn't need to do a per-row query.
+    completed_counts = (EventHistory.objects
+                        .filter(workhand_id__in=workhand_ids)
+                        .values('workhand_id')
+                        .annotate(total=Count('id')))
+    counts_map = {row['workhand_id']: row['total'] for row in completed_counts}
+
+    # Stitch everything onto each application object (avoids extra template queries).
+    for app in page_obj:
+        wid = app.workhand_id
+        app.workhand_history = workhand_history.get(wid, [])
+        app.workhand_completed_count = counts_map.get(wid, 0)
+
+    return render(request, 'comdas/approve_applications.html', {
+        'page_obj': page_obj,
+        'c': company,
+        'status_filter': status_filter,
+    })
 
 
 @company_required
@@ -1045,3 +1178,192 @@ def workhand_feedback(request, eid):
         return redirect('workhandeventhistory')
 
     return render(request, 'workdas/feedback_details.html', {'fb': fb})
+
+
+# ===========================================================================
+# PUBLIC WORKHAND PROFILE
+# Accessible to any logged-in company. Shows a workhand's public-facing
+# portfolio: bio fields, category, aggregate stats, and all received feedback.
+# ===========================================================================
+@company_required
+def public_workhand_profile(request, id):
+    """
+    Read-only public profile of a workhand, visible to companies.
+
+    Surfaces the information a company needs when deciding whether to approve
+    an application: category, location, completed-event count, average payment
+    earned, and any feedback left by other companies.
+    """
+    company = get_object_or_404(Company, user=request.user)
+    wu = get_object_or_404(
+        Workhand.objects.select_related('user', 'workhand_category'), id=id
+    )
+
+    # Aggregate career stats pulled from completed-event history.
+    history_qs = EventHistory.objects.filter(workhand_id=wu)
+    stats = history_qs.aggregate(
+        events_completed=Count('id'),
+        total_earned=Sum('payment_range'),
+    )
+
+    # All feedback left by any company for this workhand, newest first.
+    feedbacks = (
+        Feedback.objects
+        .filter(workhand_id=wu)
+        .select_related('company_id__user', 'event_id')
+        .order_by('-date')
+    )
+
+    return render(request, 'comdas/public_workhand_profile.html', {
+        'wu': wu,
+        'c': company,
+        'events_completed': stats['events_completed'] or 0,
+        'total_earned': stats['total_earned'] or 0,
+        'feedbacks': feedbacks,
+    })
+
+
+# ===========================================================================
+# EVENT DETAIL PAGE
+# Accessible to any logged-in workhand. Shows the full event card, the
+# company's public info, and an Apply button (or status if already applied).
+# ===========================================================================
+@workhand_required
+def event_detail(request, id):
+    """
+    Full detail view of a single event, seen through a workhand's eyes.
+
+    Includes the posting company's profile snippet, slot fill progress, and
+    an inline Apply / Already Applied indicator so the workhand never has to
+    leave the page to understand availability.
+    """
+    wu = get_object_or_404(Workhand, user=request.user)
+    event = get_object_or_404(
+        Event.objects.select_related('event_category', 'workhand_category', 'company_id__user'),
+        id=id,
+    )
+    attach_category_icons([event])
+
+    # Slot fill progress so workhands can see how competitive the opening is.
+    approved_count = WorkhandApplications.objects.filter(event=event, status=True).count()
+    slots_remaining = max(event.workhand_needed - approved_count, 0)
+
+    # Has this workhand already applied?
+    existing_application = (
+        WorkhandApplications.objects
+        .filter(workhand=wu, event=event)
+        .first()
+    )
+
+    # Other events by the same company (up to 4) for discovery.
+    related_events = (
+        Event.objects
+        .filter(company_id=event.company_id)
+        .exclude(id=event.id)
+        .select_related('event_category')
+        .order_by('-id')[:4]
+    )
+    attach_category_icons(related_events)
+
+    return render(request, 'workdas/event_detail.html', {
+        'event': event,
+        'wu': wu,
+        'approved_count': approved_count,
+        'slots_remaining': slots_remaining,
+        'existing_application': existing_application,
+        'related_events': related_events,
+    })
+
+
+# ===========================================================================
+# COMPANY DISCOVERY / SEARCH
+# Workhands can browse all companies, filter by name or city, and visit a
+# public company page to see that company's active events and history.
+# ===========================================================================
+@workhand_required
+def discover_companies(request):
+    """
+    Browse/search all registered companies.
+
+    Workhands use this to discover companies they haven't yet worked with,
+    check their active openings, and decide where to focus their applications.
+    Each company card shows active-event count and total completed events.
+    """
+    wu = get_object_or_404(Workhand, user=request.user)
+    q_name = request.GET.get('name', '').strip()
+    q_city = request.GET.get('city', '').strip()
+
+    companies = Company.objects.select_related('user').order_by('company_name')
+
+    if q_name:
+        companies = companies.filter(
+            Q(company_name__icontains=q_name) | Q(user__first_name__icontains=q_name)
+        )
+    if q_city:
+        companies = companies.filter(city__icontains=q_city)
+
+    # Annotate each company with counts useful for the discovery card.
+    companies = companies.annotate(
+        active_events=Count('event', distinct=True),
+        completed_events=Count('eventhistory', distinct=True),
+    )
+
+    paginator = Paginator(companies, 9)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'workdas/discover_companies.html', {
+        'page_obj': page_obj,
+        'wu': wu,
+        'q_name': q_name,
+        'q_city': q_city,
+    })
+
+
+@workhand_required
+def company_public_profile(request, id):
+    """
+    Public profile of a company, visible to workhands.
+
+    Shows the company's bio, location, active event listings (with Apply
+    buttons), and completed-event history stats. Workhands can jump straight
+    to applying from here without returning to the main search page.
+    """
+    wu = get_object_or_404(Workhand, user=request.user)
+    company = get_object_or_404(Company.objects.select_related('user'), id=id)
+
+    # Active (unfilled or partially filled) events posted by this company.
+    active_events = (
+        Event.objects
+        .filter(company_id=company)
+        .select_related('event_category', 'workhand_category')
+        .annotate(approved_count=Count('workhandapplications', filter=Q(workhandapplications__status=True)))
+        .order_by('-id')
+    )
+    attach_category_icons(active_events)
+
+    # Already-applied event IDs so the template can render correct button state.
+    applied_event_ids = set(
+        WorkhandApplications.objects
+        .filter(workhand=wu, event__company_id=company)
+        .values_list('event_id', flat=True)
+    )
+
+    # Headline stats for the company card.
+    completed_count = EventHistory.objects.filter(company_id=company).count()
+    avg_payment = (
+        EventHistory.objects
+        .filter(company_id=company)
+        .aggregate(avg=Avg('payment_range'))['avg']
+    )
+
+    paginator = Paginator(active_events, 6)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'workdas/company_public_profile.html', {
+        'company': company,
+        'wu': wu,
+        'page_obj': page_obj,
+        'applied_event_ids': applied_event_ids,
+        'completed_count': completed_count,
+        'avg_payment': avg_payment,
+    })

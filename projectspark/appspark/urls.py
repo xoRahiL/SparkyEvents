@@ -22,6 +22,11 @@ urlpatterns = [
     path('approved/', views.approved, name='approved'),
     path('markeventcompleted/<int:id>/', views.mark_event_completed, name='markeventcompleted'),
 
+    # WORKHAND EVENT & COMPANY DISCOVERY
+    path('event/<int:id>/', views.event_detail, name='eventdetail'),
+    path('companies/', views.discover_companies, name='discovercompanies'),
+    path('company/<int:id>/', views.company_public_profile, name='companypublicprofile'),
+
     # COMPANY LOGIN SIDE
     path('companyregister/', views.company_register, name='companyregister'),
     path('verifycompanyotp/', views.verify_company_otp, name='verifycompanyotp'),
@@ -44,10 +49,12 @@ urlpatterns = [
     path('rejectapp/<int:id>/', views.reject_app, name='rejectapp'),
     path('workhanddetails/<int:id>/', views.workhand_details, name='workhanddetails'),
 
+    # PUBLIC WORKHAND PROFILE (company-side)
+    path('workhand/<int:id>/profile/', views.public_workhand_profile, name='publicworkhandprofile'),
+
+    # HISTORY & FEEDBACK
     path('workhandeventhistory/', views.workhand_event_history, name='workhandeventhistory'),
     path('companyeventhistory/', views.company_event_history, name='companyeventhistory'),
-
     path('workhandfeedback/<int:eid>/', views.workhand_feedback, name='workhandfeedback'),
     path('companyfeedback/<int:id>/', views.company_feedback, name='companyfeedback'),
-
 ]

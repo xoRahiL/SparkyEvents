@@ -1,9 +1,12 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.core.files.uploadedfile import UploadedFile
 from .models import (
     Workhand, WorkhandCategory, Company, Event,
     EventsCategory, Feedback,
 )
+
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 # ---------- Shared mixin for the "register" forms ----------
@@ -18,15 +21,21 @@ class BaseRegisterForm(forms.Form):
         username = self.cleaned_data['username'].strip()
         if not username.isalnum():
             raise forms.ValidationError('Username should be alpha-numeric only, no spaces or symbols.')
-        if User.objects.filter(username=username).exists():
+        if User.objects.filter(username__iexact=username).exists():
             raise forms.ValidationError('Username already exists.')
         return username
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip()
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError('Email already exists.')
         return email
+
+    def clean_propic(self):
+        pic = self.cleaned_data.get('propic')
+        if isinstance(pic, UploadedFile) and pic.size > MAX_UPLOAD_SIZE:
+            raise forms.ValidationError('Profile picture cannot exceed 5MB.')
+        return pic
 
 
 class WorkhandRegisterForm(BaseRegisterForm):
@@ -63,7 +72,23 @@ class WorkhandProfileForm(forms.ModelForm):
         username = self.cleaned_data['username'].strip()
         if not username.isalnum():
             raise forms.ValidationError('Username should be alpha-numeric only.')
+        current_user_id = self.instance.user_id if self.instance and self.instance.pk else None
+        if User.objects.filter(username__iexact=username).exclude(pk=current_user_id).exists():
+            raise forms.ValidationError('Username already exists.')
         return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip()
+        current_user_id = self.instance.user_id if self.instance and self.instance.pk else None
+        if User.objects.filter(email__iexact=email).exclude(pk=current_user_id).exists():
+            raise forms.ValidationError('Email already registered by another account.')
+        return email
+
+    def clean_profile_pic(self):
+        pic = self.cleaned_data.get('profile_pic')
+        if isinstance(pic, UploadedFile) and pic.size > MAX_UPLOAD_SIZE:
+            raise forms.ValidationError('Profile picture cannot exceed 5MB.')
+        return pic
 
 
 class CompanyProfileForm(forms.ModelForm):
@@ -74,6 +99,28 @@ class CompanyProfileForm(forms.ModelForm):
     class Meta:
         model = Company
         fields = ['profile_pic', 'contact', 'address', 'state', 'city']
+
+    def clean_username(self):
+        username = self.cleaned_data['username'].strip()
+        if not username.isalnum():
+            raise forms.ValidationError('Username should be alpha-numeric only.')
+        current_user_id = self.instance.user_id if self.instance and self.instance.pk else None
+        if User.objects.filter(username__iexact=username).exclude(pk=current_user_id).exists():
+            raise forms.ValidationError('Username already exists.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email'].strip()
+        current_user_id = self.instance.user_id if self.instance and self.instance.pk else None
+        if User.objects.filter(email__iexact=email).exclude(pk=current_user_id).exists():
+            raise forms.ValidationError('Email already registered by another account.')
+        return email
+
+    def clean_profile_pic(self):
+        pic = self.cleaned_data.get('profile_pic')
+        if isinstance(pic, UploadedFile) and pic.size > MAX_UPLOAD_SIZE:
+            raise forms.ValidationError('Profile picture cannot exceed 5MB.')
+        return pic
 
 
 # ---------- Event forms ----------

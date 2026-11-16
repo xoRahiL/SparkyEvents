@@ -4,6 +4,7 @@ Secrets and environment-specific values now come from a `.env` file
 (never committed) instead of being hardcoded.
 """
 import os
+import sys
 from pathlib import Path
 import environ
 
@@ -82,9 +83,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'projectspark.wsgi.application'
 
 # --- Database ---
-# Priority: DATABASE_URL (Render auto-provides) > DB_ENGINE > SQLite default
+# Priority: Test mode -> DATABASE_URL (Render auto-provides) -> DB_ENGINE -> SQLite default
 # Render provides DATABASE_URL automatically; locally set DB_ENGINE=postgresql|mysql|sqlite
-if env('DATABASE_URL', default=None):
+if 'test' in sys.argv and env('DB_TEST_ENGINE', default='sqlite') == 'sqlite':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+elif env('DATABASE_URL', default=None):
     # Render provides DATABASE_URL in this format:
     # postgresql://user:password@host:port/dbname
     # Note: Render's Internal Database URL omits the port (defaults to 5432),
@@ -108,7 +116,7 @@ if env('DATABASE_URL', default=None):
             # spell can hit a dead pooled connection and 500. This pings before reusing one.
             'CONN_HEALTH_CHECKS': True,
             # Hosted Postgres (Neon) requires SSL, and the manual URL parsing above drops ?sslmode=...
-            'OPTIONS': {'sslmode': env('DB_SSLMODE', default='require')},
+            'OPTIONS': {'sslmode': env('DB_SSLMODE', default='require')},\
         }
     }
 elif env('DB_ENGINE', default='sqlite') == 'postgresql':

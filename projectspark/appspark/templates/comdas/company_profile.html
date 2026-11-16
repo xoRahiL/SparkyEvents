@@ -50,13 +50,13 @@
                                     <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
                                         {% if c.profile_pic %}
                                         {% if c.profile_pic.name == "assets2/img/AnonymousPic.png" %}
-                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% else %}
-                                        <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% endif %}
                                         {% else %}
                                         <img src="{% static 'assets2/img/profile-img.jpg' %}" alt="Profile"
-                                             class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                             class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% endif %}
                                         <h2 class="text-capitalize">{{user.first_name}}</h2>
                                     </div>
@@ -105,13 +105,13 @@
                                     <div class="col-md-8 col-lg-9">
                                         {% if c.profile_pic %}
                                         {% if c.profile_pic.name == "assets2/img/AnonymousPic.png" %}
-                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% else %}
-                                        <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                        <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% endif %}
                                         {% else %}
                                         <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile"
-                                             class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; display: block;">
+                                             class="rounded-circle" style="width: 160px; height: 160px; object-fit: cover; border-radius: 50%; display: block; border: 3px solid rgba(248,34,73,0.3); box-shadow: 0 4px 16px rgba(0,0,0,0.13);">
                                         {% endif %}
                                         <div class="pt-2">
                                             <input type="file" class="form-control w-50"

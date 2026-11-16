@@ -73,7 +73,7 @@
 <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-        <a href="index.html" class="logo d-flex align-items-center">
+        <a href="{% url 'index' %}" class="logo d-flex align-items-center">
             <img src="{% static 'assets2/img/star.png' %}" alt="S">
             <span class="d-none d-lg-block me-0" style="margin-left: 0;">SparkyEvents</span>
         </a>
@@ -88,9 +88,9 @@
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
 
                     {% if c.profile_pic.name == "assets2/img/AnonymousPic.png" %}
-                    <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; display: block;">
+                    <img src="{% static 'assets2/img/AnonymousPic.png' %}" alt="Profile" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; display: block; border: 2px solid rgba(248,34,73,0.25); box-shadow: 0 1px 4px rgba(0,0,0,0.12);">
                     {% else %}
-                    <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; display: block;">
+                    <img src="{{c.profile_pic.url}}" alt="Profile" class="rounded-circle" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; display: block; border: 2px solid rgba(248,34,73,0.25); box-shadow: 0 1px 4px rgba(0,0,0,0.12);">
                     {% endif %}
 
                     <span class="d-none d-md-block dropdown-toggle ps-2" style="text-transform:capitalize">{{ user.username }}</span>
