@@ -1643,3 +1643,42 @@ h1.logo {
     font-size: 13px;
     color: #ddd;
 }
+
+/*--------------------------------------------------------------
+# About Section - content blocks
+--------------------------------------------------------------*/
+#about .about-lead { font-size: 16px; line-height: 1.7; max-width: 640px; }
+
+#about .about-card {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 26px;
+    transition: transform 0.3s, border-color 0.3s;
+}
+#about .about-card:hover { transform: translateY(-4px); border-color: #f82249; }
+#about .about-card .about-icon { color: #f82249; font-size: 30px; }
+#about .about-card h3 { font-size: 18px; margin: 8px 0; }
+#about .about-card p { font-size: 14px; margin-bottom: 14px; }
+#about .about-link { color: #f82249; font-weight: 600; text-decoration: none; font-size: 14px; }
+#about .about-link:hover { color: #fff; }
+
+#about .about-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 32px;
+    margin: 28px 0 0 0;
+    padding: 0;
+}
+#about .about-steps li { color: #fff; font-size: 14px; display: flex; align-items: center; gap: 10px; }
+#about .about-steps span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f82249;
+    font-weight: 700;
+    font-size: 13px;
+}
